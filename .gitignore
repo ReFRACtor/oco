@@ -1,0 +1,17 @@
+# Cache used by automake
+autom4te.cache
+
+# Ignore compiled python file
+*.pyc
+
+# Various files written by emacs
+*~
+\#*#
+.#*
+
+# Mac Finder puts these into directories
+.DS_Store
+
+# Vim swap files
+*.swp
+.tramp_history
