@@ -21,31 +21,30 @@ To make use of this template, it is envisioned that users will make the followin
 
 - Modify ``/CMakeLists.txt``
 
-  * Set project() name
-  * Set version_number
+  * Set ``project()`` name
+  * Set version number by replacing ``TEMPLATE_VERSION`` with ``<project>_VERSION`` and setting the version number
   * If you don't require ReFRACtor's python module, remove ``"COMPONENTS python"`` from the require line in the ``find_package(Refractor ...)`` command
   * If your project will not have a python component, comment out the ``add_subdirectory(python)`` line.
-  * Set the filenames in the configure_file() to ``"${PROJECT_SOURCE_DIR}/script/setup_<project>_env.sh.in"`` and ``"${PROJECT_BINARY_DIR}/setup_<project>_env.sh"``
+  * Set the filenames in the ``configure_file()`` to ``"${PROJECT_SOURCE_DIR}/script/setup_<project>_env.sh.in"`` and ``"${PROJECT_BINARY_DIR}/setup_<project>_env.sh"``
   * Replace the ``"${PROJECT_BINARY_DIR}/setup_template_env.sh"`` filename in ``install()`` with ``"${PROJECT_BINARY_DIR}/setup_<project>_env.sh"``
 
 - Add C++ source implementation and header files to ``/lib/`` directory
 
 - Modify ``/lib/CMakeLists.txt``
 
-  * Change variables ${TEMPLATE_LIB_DIR} and ${TEMPLATE_INCLUDE_DIR} to ${<project>_LIB_DIR} and ${<project>_INCLUDE_DIR}
-  * Add sources to LIB_SOURCES
-  * Replace template with <project> in the add_library(), target_link_libraries() and install(TARGETS ...)
+  * Change variables ``TEMPLATE_LIB_DIR`` and ``TEMPLATE_INCLUDE_DIR`` to ``<project>_LIB_DIR`` and ``<project>_INCLUDE_DIR``
+  * Add sources to ``LIB_SOURCES``
+  * Replace ``template`` with ``<project>`` in the ``add_library()``, ``target_link_libraries()`` and ``install(TARGETS ...)``
 
 - Add Python SWIG interface files to ``/python/`` directory
 
 - Modify ``python/CMakeLists.txt`` (if project has python components)
 
-  * Set PYTHON_PACKAGE_NAME
-  * Add interface files to MODULE_INTERFACE_FILES
-  * Set the library target
-  * Replace template with <project> in swig_link_libraries()
+  * Set ``PYTHON_PACKAGE_NAME``
+  * Add interface files to ``MODULE_INTERFACE_FILES``
+  * Replace ``template`` with ``<project>`` in ``swig_link_libraries()``
 
-  **Note: It is important that the SWIG_TYPE_TABLE remain set to "refractor" in target_compile_definitions() in order to share type information with the ReFRACtor python modules.**
+  **Note: It is important that the SWIG_TYPE_TABLE remain set to "refractor" in ``target_compile_definitions()`` in order to share type information with the ReFRACtor python modules.**
 
 - Add test implementation and header files to ``/test/``
 
@@ -56,6 +55,7 @@ To make use of this template, it is envisioned that users will make the followin
 - Modify ``test/CMakeLists.txt``
 
   * Change variable ``TEMPLATE_TEST_DIR`` to ``<project>_TEST_DIR``
+  * Change variable ``TEMPLATE_LIB_DIR`` to ``<project>_LIB_DIR``
   * Add test sources to ``TEST_SOURCES``
   * Replace ``template_test`` with ``<project>_test`` in ``add_executable()``, ``target_link_libraries()``, and ``add_test()``
   * Replace ``template`` with ``<project>`` in ``target_link_libraries()`` and ``add_test()``
