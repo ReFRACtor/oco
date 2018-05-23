@@ -32,7 +32,11 @@ set_source_files_properties(${MODULE_INTERFACE_FILES} PROPERTIES CPLUSPLUS ON SW
 
 foreach(swig_file ${MODULE_INTERFACE_FILES})
     get_filename_component(module_name ${swig_file} NAME_WE)
-    swig_add_library(${module_name} TYPE SHARED LANGUAGE python SOURCES ${swig_file})
+    if(CMAKE_VERSION VERSION_GREATER 3.7)
+        swig_add_library(${module_name} TYPE SHARED LANGUAGE python SOURCES ${swig_file})
+    else()
+        swig_add_module(${module_name} python ${swig_file})
+    endif()
     swig_link_libraries(${module_name} ${PYTHON_LIBRARIES} ${THIRDPARTY_LIBRARIES} template)
     target_compile_definitions(${SWIG_MODULE_${module_name}_REAL_NAME} PRIVATE SWIG_TYPE_TABLE=refractor)
     LIST(APPEND SWIG_LIBS ${SWIG_MODULE_${module_name}_REAL_NAME})
