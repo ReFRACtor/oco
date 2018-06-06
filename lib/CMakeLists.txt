@@ -1,5 +1,5 @@
-set(TEMPLATE_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-include_directories(${TEMPLATE_LIB_DIR})
+set(OCO_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories(${OCO_LIB_DIR})
 
 # Add each source file to LIB_SOURCES
 set(LIB_SOURCES
@@ -8,14 +8,14 @@ set(LIB_SOURCES
 )
 
 # Create shared library
-add_library(template SHARED ${LIB_SOURCES})
-target_link_libraries(template ${THIRDPARTY_LIBRARIES})
+add_library(oco SHARED ${LIB_SOURCES})
+target_link_libraries(oco ${THIRDPARTY_LIBRARIES})
 
 # Expose lib directory location to top level scope
-set(TEMPLATE_LIB_DIR ${TEMPLATE_LIB_DIR} PARENT_SCOPE)
+set(OCO_LIB_DIR ${OCO_LIB_DIR} PARENT_SCOPE)
 
 # Add header files and library to install target
-file(GLOB TEMPLATE_INCLUDE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
-install(FILES ${TEMPLATE_INCLUDE_FILES} DESTINATION include)
+file(GLOB OCO_INCLUDE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+install(FILES ${OCO_INCLUDE_FILES} DESTINATION include)
 
-install(TARGETS template LIBRARY DESTINATION lib)
+install(TARGETS oco LIBRARY DESTINATION lib)

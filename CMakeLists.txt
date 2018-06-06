@@ -1,12 +1,12 @@
 # This must be called before project() since it sets this variable as empty into the cache
 set(CMAKE_BUILD_TYPE Release CACHE STRING "Type of build to create, Release (optimized) by default")
 
-project("template")
+project("oco")
 
 cmake_minimum_required(VERSION 3.2)
 
 # Version number
-set(TEMPLATE_VERSION "1.0.0")
+set(OCO_VERSION "1.0.0")
 
 # Global setting: Use C++11
 set(CMAKE_CXX_STANDARD 11)
@@ -71,7 +71,7 @@ add_subdirectory(test)
 
 # Configure setup shell script to have appropriate paths and install
 configure_file (
-    "${PROJECT_SOURCE_DIR}/script/setup_template_env.sh.in"
-    "${PROJECT_BINARY_DIR}/setup_template_env.sh"
+    "${PROJECT_SOURCE_DIR}/script/setup_oco_env.sh.in"
+    "${PROJECT_BINARY_DIR}/setup_oco_env.sh"
 )
-install(FILES "${PROJECT_BINARY_DIR}/setup_template_env.sh" DESTINATION "${CMAKE_INSTALL_PREFIX}")
+install(FILES "${PROJECT_BINARY_DIR}/setup_oco_env.sh" DESTINATION "${CMAKE_INSTALL_PREFIX}")

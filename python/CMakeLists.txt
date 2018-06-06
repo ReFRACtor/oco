@@ -1,5 +1,5 @@
 # Set the name of the Python package
-set(PYTHON_PACKAGE_NAME "template_python")
+set(PYTHON_PACKAGE_NAME "oco_python")
 
 # Find Python
 find_package(PythonLibs 3.0 REQUIRED)
@@ -37,7 +37,7 @@ foreach(swig_file ${MODULE_INTERFACE_FILES})
     else()
         swig_add_module(${module_name} python ${swig_file})
     endif()
-    swig_link_libraries(${module_name} ${PYTHON_LIBRARIES} ${THIRDPARTY_LIBRARIES} template)
+    swig_link_libraries(${module_name} ${PYTHON_LIBRARIES} ${THIRDPARTY_LIBRARIES} oco)
     target_compile_definitions(${SWIG_MODULE_${module_name}_REAL_NAME} PRIVATE SWIG_TYPE_TABLE=refractor)
     LIST(APPEND SWIG_LIBS ${SWIG_MODULE_${module_name}_REAL_NAME})
 endforeach()

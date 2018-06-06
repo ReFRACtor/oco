@@ -1,5 +1,5 @@
-set(TEMPLATE_TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
-include_directories(${TEMPLATE_TEST_DIR} ${TEMPLATE_LIB_DIR})
+set(OCO_TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+include_directories(${OCO_TEST_DIR} ${OCO_LIB_DIR})
 
 # Add each test file to TEST_SOURCES
 set(TEST_SOURCES
@@ -7,11 +7,11 @@ set(TEST_SOURCES
 )
 
 # Create test executable and link to main library target
-add_executable(template_test ${TEST_SOURCES})
-target_link_libraries(template_test template ${THIRDPARTY_LIBRARIES})
+add_executable(oco_test ${TEST_SOURCES})
+target_link_libraries(oco_test oco ${THIRDPARTY_LIBRARIES})
 
 # Add test to ctest
-add_test(NAME template COMMAND template_test)
+add_test(NAME oco COMMAND oco_test)
 
 # Expose test directory location to top level scope
-set(TEMPLATE_TEST_DIR ${TEMPLATE_TEST_DIR} PARENT_SCOPE)
+set(OCO_TEST_DIR ${OCO_TEST_DIR} PARENT_SCOPE)

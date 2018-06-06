@@ -1,0 +1,15 @@
+oco_install_path=@CMAKE_INSTALL_PREFIX@
+oco_lib_path=$oco_install_path/lib
+oco_python_path=$oco_install_path/python
+
+if [ -n "$LD_LIBRARY_PATH" ]; then
+  export LD_LIBRARY_PATH=$oco_lib_path:$LD_LIBRARY_PATH
+else
+  export LD_LIBRARY_PATH=$oco_lib_path
+fi
+
+if [ -n "$PYTHONPATH" ]; then
+  export PYTHONPATH=$oco_python_path:$PYTHONPATH
+else
+  export PYTHONPATH=$oco_python_path
+fi
