@@ -2,10 +2,7 @@ set(OCO_LIB_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(${OCO_LIB_DIR})
 
 # Add each source file to LIB_SOURCES
-set(LIB_SOURCES
-    # file1.cc
-    # file2.cc
-)
+file(GLOB LIB_SOURCES "*.cc")
 
 # Create shared library
 add_library(oco SHARED ${LIB_SOURCES})
