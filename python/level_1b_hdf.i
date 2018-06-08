@@ -1,6 +1,3 @@
-// -*- mode: c++; -*-
-// (Not really c++, but closest emacs mode)
-
 %include "common.i"
 
 %{
@@ -8,7 +5,6 @@
 %}
 
 %base_import(level_1b)
-%import "noise_model.i"
 %import "hdf_sounding_id.i"
 %import "hdf_file.i"
 
@@ -33,8 +29,8 @@ public:
 protected:
   Level1bHdf();
   Level1bHdf(const std::string& Fname, 
-	     const boost::shared_ptr<HdfSoundingId>& Sounding_id);
+             const boost::shared_ptr<HdfSoundingId>& Sounding_id);
   Level1bHdf(const boost::shared_ptr<HdfFile>& Hfile, 
-	     const boost::shared_ptr<HdfSoundingId>& Sounding_id);
+             const boost::shared_ptr<HdfSoundingId>& Sounding_id);
 };
 }

@@ -1,5 +1,5 @@
-# Set the name of the Python package
-set(PYTHON_PACKAGE_NAME "oco_python")
+# Package the the module lives under
+set(PYTHON_PACKAGE_NAME "oco")
 
 # Find Python
 find_package(PythonLibs 3.0 REQUIRED)
@@ -23,9 +23,7 @@ set(CMAKE_SWIG_OUTDIR ${PACKAGE_OUTDIR})
 include_directories(${THIRDPARTY_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/lib)
 
 # Which interface files should be used for creating modules
-set(MODULE_INTERFACE_FILES 
-    # file1.i
-)
+set(MODULE_INTERFACE_FILES "oco.i")
 
 # Use C++ mode for SWIG interface files, turn on all warnings
 set_source_files_properties(${MODULE_INTERFACE_FILES} PROPERTIES CPLUSPLUS ON SWIG_FLAGS "-Wall") 
@@ -54,6 +52,12 @@ add_custom_target(python DEPENDS ${SWIG_LIBS})
 file(GLOB INSTALL_INTERFACE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.i)
 install(FILES ${INSTALL_INTERFACE_FILES} DESTINATION include)
 
+# Install python source files from the python/ source directory
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/" DESTINATION "python/${PYTHON_PACKAGE_NAME}"
+        FILES_MATCHING
+        PATTERN "*.py")
+
+# Install SWIG created files
 install(DIRECTORY ${CMAKE_SWIG_OUTDIR} DESTINATION python
         FILES_MATCHING
         PATTERN "*.${CMAKE_SHARED_LIBRARY_SUFFIX}"
