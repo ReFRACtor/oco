@@ -1,0 +1,11 @@
+numpy
+
+# If installed ReFRACtor config values can be accessed 
+# like object attributes in addition to dictionary elements
+attrdict
+
+# For plotting
+matplotlib
+
+# For reading input files.
+h5py

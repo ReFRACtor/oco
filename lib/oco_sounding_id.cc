@@ -12,11 +12,25 @@ REGISTER_LUA_DERIVED_CLASS(OcoSoundingId,HdfSoundingId)
 REGISTER_LUA_END()
 #endif
 
+//-----------------------------------------------------------------------
+/// Read Hdf file and determine sounding id information.
+///
+/// \param File The filename of the file where a sounding id dataset is found
+/// \param Sounding_id  The sounding ID.
+///
+/// The sounding ID should be in the format:
+///  -# 200907261717015 - Where the ending 5 is the sounding number
+//-----------------------------------------------------------------------
+
+OcoSoundingId::OcoSoundingId(const std::string& Fname, const std::string& Sounding_id)
+{
+  initialize(HdfFile(Fname), Sounding_id);
+}
 
 //-----------------------------------------------------------------------
 /// Read Hdf file and determine sounding id information.
 ///
-/// \param File The file to read.
+/// \param File HdfFile object of the file to read
 /// \param Sounding_id  The sounding ID.
 ///
 /// The sounding ID should be in the format:

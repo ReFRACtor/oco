@@ -10,6 +10,7 @@ namespace FullPhysics {
 *******************************************************************/
 class OcoSoundingId : public HdfSoundingId {
 public:
+  OcoSoundingId(const std::string& Fname, const std::string& Sounding_id);
   OcoSoundingId(const HdfFile& File, const std::string& Sounding_id);
   /// The position in the OCO simulator scene file
   int scene_index() const

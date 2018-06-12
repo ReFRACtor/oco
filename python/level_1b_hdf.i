@@ -2,6 +2,7 @@
 
 %{
 #include "level_1b_hdf.h"
+#include "noise_model.h"
 %}
 
 %base_import(level_1b)
@@ -25,7 +26,7 @@ public:
   virtual DoubleWithUnit relative_velocity(int i) const;
   virtual ArrayWithUnit<double, 1> spectral_coefficient(int i) const;
   virtual Time time(int i) const;
-  %python_attribute_with_set(noise_model, boost::shared_ptr<NoiseModel>);
+  %python_attribute_with_set(noise_model, boost::shared_ptr<FullPhysics::NoiseModel>);
 protected:
   Level1bHdf();
   Level1bHdf(const std::string& Fname, 
