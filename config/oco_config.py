@@ -27,7 +27,8 @@ data_dir = os.path.realpath(os.path.join(config_dir, '../test/in'))
 l1b_file = os.path.join(data_dir, "oco2_L1bScND_16094a_170711_B7302r_171102090317-selected_ids.h5")
 met_file = os.path.join(data_dir, "oco2_L2MetND_16094a_170711_B8000r_171017214714-selected_ids.h5")
 
-ils_input = h5py.File(l1b_file, "r")
+l1b_input = h5py.File(l1b_file, "r")
+ils_input = l1b_input
 
 observation_id = OcoSoundingId(l1b_file, "2017071110541471")
 
@@ -37,6 +38,9 @@ def static_value(dataset, dtype=None):
 
 def static_units(dataset):
     return static_input[dataset].attrs['Units'][0].decode('UTF8') 
+
+def static_spectral_domain(dataset):
+    return rf.SpectralDomain(static_value(dataset), rf.Unit(static_units(dataset)))
 
 def oco_level1b():
     max_ms = np.array([ 7.00e20, 2.45e20, 1.25e20 ])
@@ -48,6 +52,15 @@ def oco_level1b():
     l1b.noise_model = noise
 
     return l1b
+
+def oco_bad_sample_mask():
+    sounding_idx = observation_id.sounding_number 
+    snr_coeff = l1b_input["/InstrumentHeader/snr_coef"]
+
+    if snr_coeff.shape[3] < 3:
+        raise param.ParamError("L1B file /InstrumentHeader/snr_coef does not contain bad sample mask")
+
+    return snr_coeff[:, sounding_idx, :, 2]
 
 def oco_meteorology():
     return OcoMetFile(met_file, observation_id)
@@ -90,6 +103,7 @@ config_def = {
     },
     'spec_win': {
         'creator': creator.forward_model.SpectralWindowRange,
+        'bad_sample_mask': oco_bad_sample_mask,
         'window_ranges': {
             'creator': creator.value.ArrayWithUnit,
             'value': static_value("/Spectral_Window/microwindow"),
@@ -97,8 +111,11 @@ config_def = {
         },
     },
     'spectrum_sampling': {
-        'creator': creator.forward_model.FixedSpacingSpectrumSampling,
+        'creator': creator.forward_model.NonuniformSpectrumSampling,
         'high_res_spacing': rf.DoubleWithUnit(0.01, "cm^-1"), 
+        'channel_domains': [ static_spectral_domain("/Spectrum_Sampling/nonuniform_grid_1"), 
+                             static_spectral_domain("/Spectrum_Sampling/nonuniform_grid_2"),
+                             static_spectral_domain("/Spectrum_Sampling/nonuniform_grid_3"), ]
     },
     'instrument': {
         'creator': creator.instrument.IlsInstrument,
