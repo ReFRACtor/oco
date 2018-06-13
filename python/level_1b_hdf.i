@@ -8,6 +8,9 @@
 %base_import(level_1b)
 %import "hdf_sounding_id.i"
 %import "hdf_file.i"
+%import "noise_model.i"
+%import "array_with_unit.i"
+%import "double_with_unit.i"
 
 %fp_shared_ptr(FullPhysics::Level1bHdf);
 
