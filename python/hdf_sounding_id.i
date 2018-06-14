@@ -1,5 +1,3 @@
-%include "common.i"
-
 %{
 #include "hdf_sounding_id.h"
 %}

@@ -1,5 +1,3 @@
-%include "common.i"
-
 %{
 #include "oco_met_file.h"
 %}

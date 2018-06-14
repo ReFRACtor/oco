@@ -1,5 +1,3 @@
-%include "common.i"
-
 %{
 #include "level_1b_oco.h"
 %}

@@ -1,5 +1,3 @@
-%include "common.i"
-
 %{
 #include "oco_noise_model.h"
 %}

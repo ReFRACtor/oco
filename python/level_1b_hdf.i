@@ -1,5 +1,3 @@
-%include "common.i"
-
 %{
 #include "level_1b_hdf.h"
 #include "noise_model.h"
