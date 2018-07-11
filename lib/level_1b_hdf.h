@@ -1,6 +1,6 @@
 #ifndef LEVEL_1B_HDF_H
 #define LEVEL_1B_HDF_H
-#include "level_1b.h"
+#include "level_1b_sample_coefficient.h"
 #include "hdf_sounding_id.h"
 #include "fp_exception.h"
 #include "hdf_file.h"
@@ -19,7 +19,7 @@ namespace FullPhysics {
   so if needed we can pull this out as a separate mixin. But for now,
   there doesn't seem to be any point to do this.
 *******************************************************************/
-class Level1bHdf: public Level1b {
+class Level1bHdf: public Level1bSampleCoefficient {
 public:
   virtual ~Level1bHdf() {}
   virtual int number_spectrometer() const
