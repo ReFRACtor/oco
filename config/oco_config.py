@@ -389,6 +389,10 @@ def config_definition(l1b_file, met_file, sounding_id):
                     'filename': covariance_file,
                 }
             },
+            'solver': {
+                'creator': creator.retrieval.NLLSSolverLM,
+                'max_iteration': 5,
+            },
             'solver_nlls_gsl': {
                 'creator': creator.retrieval.NLLSSolverGSLLMSDER,
                 'max_cost_function_calls': 10,
@@ -396,7 +400,7 @@ def config_definition(l1b_file, met_file, sounding_id):
                 'dx_tol_rel': 1e-5, 
                 'g_tol_abs': 1e-5,
             },
-            'solver': {
+            'solver_connor': {
                 'creator': creator.retrieval.ConnorSolverMAP,
                 'max_cost_function_calls': 14,
                 'threshold': 2.0,
