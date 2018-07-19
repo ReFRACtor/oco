@@ -34,9 +34,12 @@ foreach(swig_file ${MODULE_INTERFACE_FILES})
     # Figure out which other interface files are included, and hence depended on by the module interface file
     # regenerate SWIG wrappers and recompile if those change
     execute_process(COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/interface_deps.sh ${CMAKE_CURRENT_SOURCE_DIR}/${swig_file}
-        OUTPUT_VARIABLE DEP_INTERFACE_FILES OUTPUT_STRIP_TRAILING_WHITESPACE)
+        OUTPUT_VARIABLE DEP_INTERFACE_FILES OUTPUT_STRIP_TRAILING_WHITESPACE RESULT_VARIABLE INTERFACE_DEP_RES ERROR_VARIABLE INTERFACE_DEP_ERR)
 
-    message(${DEP_INTERFACE_FILES})
+    if(${INTERFACE_DEP_RES})
+        message(FATAL_ERROR "Error running interface_deps.py:\n${INTERFACE_DEP_ERR}\n${DEP_INTERFACE_FILES}")
+    endif()
+
     # Make module recompile if any of the interface files change
     set(SWIG_MODULE_${module_name}_EXTRA_DEPS ${DEP_INTERFACE_FILES})
 

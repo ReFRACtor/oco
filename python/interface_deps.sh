@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # Find GNU version of utils
 # Prefixed with g* on Mac OSX
 # Install coreutils package of Homebrew or MacPorts
@@ -11,7 +13,8 @@ else
 fi
 
 if [ ! -e "$readlink_bin" ]; then
-    echo "readlink binary does not exist: $readlink_bin"
+    echo "$(basename $0): readlink binary does not exist: $readlink_bin" >&2
+    exit 1
 fi
 
 if [ -e $(which gpaste) ]; then
@@ -21,7 +24,8 @@ else
 fi
 
 if [ ! -e "$paste_bin" ]; then
-    echo "paste binary does not exist: $paste_bin"
+    echo "$(basename $0): paste binary does not exist: $paste_bin" >&2
+    exit 1
 fi
 
 interface_dir=$(dirname $0)
