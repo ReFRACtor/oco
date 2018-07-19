@@ -19,7 +19,6 @@ else:
 config_dir = os.path.dirname(__file__)
 
 static_input_file = os.path.join(config_dir, "static_input.h5")
-static_input = h5py.File(static_input_file, "r")
 
 solar_file = os.path.join(config_dir, "oco_solar_model.h5")
 aerosol_prop_file = os.path.join(os.environ["REFRACTOR_INPUTS"], "l2_aerosol_combined.h5")
@@ -28,17 +27,18 @@ covariance_file = os.path.join(config_dir, "retrieval_covariance.h5")
 
 # Helpers to abstract away getting data out of the static input file
 def static_value(dataset, dtype=None):
-    return np.array(static_input[dataset][:], dtype=dtype)
+    with h5py.File(static_input_file, "r") as static_input:
+        return np.array(static_input[dataset][:], dtype=dtype)
 
 def static_units(dataset):
-    return static_input[dataset].attrs['Units'][0].decode('UTF8') 
+    with h5py.File(static_input_file, "r") as static_input:
+        return static_input[dataset].attrs['Units'][0].decode('UTF8') 
 
 def static_spectral_domain(dataset):
     return rf.SpectralDomain(static_value(dataset), rf.Unit(static_units(dataset)))
 
-def oco_level1b(l1b_file, observation_id):
+def oco_level1b(hdf_obj, observation_id):
     max_ms = np.array([ 7.00e20, 2.45e20, 1.25e20 ])
-    hdf_obj = rf.HdfFile(l1b_file)
 
     l1b = Level1bOco(hdf_obj, observation_id)
 
@@ -50,42 +50,35 @@ def oco_level1b(l1b_file, observation_id):
 def oco_meteorology(met_file, observation_id):
     return OcoMetFile(met_file, observation_id)
 
-def oco_bad_sample_mask(l1b_input, observation_id):
+def oco_bad_sample_mask(hdf_obj, observation_id):
     sounding_idx = observation_id.sounding_number 
 
     # Try to get bad sample list from a dedicated dataset
-    if "/InstrumentHeader/bad_sample_list" in l1b_input:
-        return l1b_input["/InstrumentHeader/bad_sample_list"][:, sounding_idx, :]
-
-    # Else try and get bad sample list from snr_coef dataset for older versions of the OCO-2 product
-    snr_coeff = l1b_input["/InstrumentHeader/snr_coef"]
-
-    if snr_coeff.shape[3] == 3:
-        return snr_coeff[:, sounding_idx, :, 2]
+    if hdf_obj.has_object("/InstrumentHeader/bad_sample_list"):
+        return hdf_obj.read_double_3d("/InstrumentHeader/bad_sample_list")[:, sounding_idx, :]
     else:
-        raise param.ParamError("L1B file /InstrumentHeader/snr_coef does not contain bad sample mask")
-    
+        # Else try and get bad sample list from snr_coef dataset for older versions of the OCO-2 product
+        return hdf_obj.read_double_4d("/InstrumentHeader/snr_coef")[:, sounding_idx, :, 2]
 
 # Return ILS information for the observation sounding position
-def ils_delta_lambda(ils_input, observation_id):
+def ils_delta_lambda(hdf_obj, observation_id):
     sounding_idx = observation_id.sounding_number 
-    return ils_input["/InstrumentHeader/ils_delta_lambda"][:, sounding_idx, :, :]
+    return hdf_obj.read_double_4d("/InstrumentHeader/ils_delta_lambda")[:, sounding_idx, :, :]
 
-def ils_response(ils_input, observation_id):
+def ils_response(hdf_obj, observation_id):
     sounding_idx = observation_id.sounding_number 
-    return ils_input["/InstrumentHeader/ils_relative_response"][:, sounding_idx, :, :]
+    return hdf_obj.read_double_4d("/InstrumentHeader/ils_relative_response")[:, sounding_idx, :, :]
 
 def config_definition(l1b_file, met_file, sounding_id):
-    l1b_input = h5py.File(l1b_file, "r")
-    ils_input = l1b_input
-    observation_id = OcoSoundingId(l1b_file, sounding_id)
+    l1b_obj = rf.HdfFile(l1b_file)
+    observation_id = OcoSoundingId(l1b_obj, sounding_id)
 
     config_def = {
         'creator': creator.base.SaveToCommon,
         'order': ['input', 'common', 'spec_win', 'spectrum_sampling', 'instrument', 'atmosphere', 'radiative_transfer', 'forward_model' , 'retrieval'],
         'input': {
             'creator': creator.base.SaveToCommon,
-            'l1b': oco_level1b(l1b_file, observation_id),
+            'l1b': oco_level1b(l1b_obj, observation_id),
             'met': oco_meteorology(met_file, observation_id),
         },
         'common': {
@@ -109,7 +102,7 @@ def config_definition(l1b_file, met_file, sounding_id):
         },
         'spec_win': {
             'creator': creator.forward_model.SpectralWindowRange,
-            'bad_sample_mask': oco_bad_sample_mask(l1b_input, observation_id),
+            'bad_sample_mask': oco_bad_sample_mask(l1b_obj, observation_id),
             'window_ranges': {
                 'creator': creator.value.ArrayWithUnit,
                 'value': static_value("/Spectral_Window/microwindow"),
@@ -142,8 +135,8 @@ def config_definition(l1b_file, met_file, sounding_id):
             },
             'ils_function': {
                 'creator': creator.instrument.IlsTable,
-                'delta_lambda': ils_delta_lambda(ils_input, observation_id),
-                'response': ils_response(ils_input, observation_id),
+                'delta_lambda': ils_delta_lambda(l1b_obj, observation_id),
+                'response': ils_response(l1b_obj, observation_id),
             },
             'instrument_correction': {
                 'creator': creator.instrument.InstrumentCorrectionList,
