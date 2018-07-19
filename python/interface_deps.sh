@@ -1,12 +1,10 @@
 #!/bin/sh
 
-set -e
-
 # Find GNU version of utils
 # Prefixed with g* on Mac OSX
 # Install coreutils package of Homebrew or MacPorts
 
-if [ -e $(which greadlink) ]; then
+if [ -n "$(which greadlink)" ]; then
     readlink_bin=$(which greadlink)
 else
     readlink_bin=$(which readlink)
@@ -17,7 +15,7 @@ if [ ! -e "$readlink_bin" ]; then
     exit 1
 fi
 
-if [ -e $(which gpaste) ]; then
+if [ -n "$(which gpaste)" ]; then
     paste_bin=$(which gpaste)
 else
     paste_bin=$(which paste)
