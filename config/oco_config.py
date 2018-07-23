@@ -69,17 +69,13 @@ def ils_response(hdf_obj, observation_id):
     sounding_idx = observation_id.sounding_number 
     return hdf_obj.read_double_4d("/InstrumentHeader/ils_relative_response")[:, sounding_idx, :, :]
 
-def config_definition(l1b_file, met_file, sounding_id):
-    l1b_obj = rf.HdfFile(l1b_file)
-    observation_id = OcoSoundingId(l1b_obj, sounding_id)
-
+# Common configuration defintion shared amonst retrieval and simulation types of configuration
+def common_config_definition():
     config_def = {
         'creator': creator.base.SaveToCommon,
         'order': ['input', 'common', 'scenario', 'spec_win', 'spectrum_sampling', 'instrument', 'atmosphere', 'radiative_transfer', 'forward_model' , 'retrieval'],
         'input': {
-            'creator': creator.base.SaveToCommon,
-            'l1b': oco_level1b(l1b_obj, observation_id),
-            'met': oco_meteorology(met_file, observation_id),
+            # Filled in by derived config, not required
         },
         'common': {
             'creator': creator.base.SaveToCommon,
@@ -99,61 +95,24 @@ def config_definition(l1b_file, met_file, sounding_id):
         # Wrap the common temporal/spatial values into the scenario block which will
         # be exposed to other creators
         'scenario': {
+            # Place holders for the value required, must be filled in by derived config
             'creator': creator.base.SaveToCommon,
-            'time': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "time",
-            },
-            'latitude': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "latitude",
-            },
-            'longitude': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "longitude",
-            },
-            'surface_height': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "altitude",
-            },
-            'altitude': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "altitude",
-            }, # same as surface_height
-            'solar_distance': {
-                'creator': creator.l1b.SolarDistanceFromL1b,
-            },
-            'solar_zenith': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "solar_zenith",
-            },
-            'solar_azimuth': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "solar_azimuth",
-            },
-            'observation_zenith': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "sounding_zenith",
-            },
-            'observation_azimuth': {
-                'creator': creator.l1b.RelativeAzimuthFromLevel1b,
-            },
-            'relative_velocity': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "relative_velocity",
-            },
-            'spectral_coefficient': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': 'spectral_coefficient',
-            },
-            'stokes_coefficients': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "stokes_coefficient",
-            },
+            'time': None,
+            'latitude': None,
+            'longitude': None,
+            'surface_height': None,
+            'altitude': None, # same as surface_height
+            'solar_distance': None,
+            'solar_zenith': None,
+            'solar_azimuth': None,
+            'observation_zenith': None,
+            'observation_azimuth': None,
+            'relative_velocity': None,
+            'spectral_coefficient': None,
+            'stokes_coefficients': None,
         },
         'spec_win': {
             'creator': creator.forward_model.SpectralWindowRange,
-            'bad_sample_mask': oco_bad_sample_mask(l1b_obj, observation_id),
             'window_ranges': {
                 'creator': creator.value.ArrayWithUnit,
                 'value': static_value("/Spectral_Window/microwindow"),
@@ -186,8 +145,9 @@ def config_definition(l1b_file, met_file, sounding_id):
             },
             'ils_function': {
                 'creator': creator.instrument.IlsTable,
-                'delta_lambda': ils_delta_lambda(l1b_obj, observation_id),
-                'response': ils_response(l1b_obj, observation_id),
+                # These need to be supplied by the derived config definition
+                'delta_lambda': None,
+                'response': None, 
             },
             'instrument_correction': {
                 'creator': creator.instrument.InstrumentCorrectionList,
@@ -318,14 +278,8 @@ def config_definition(l1b_file, met_file, sounding_id):
                 'child': 'lambertian',
                 'lambertian': {
                     'creator': creator.ground.GroundLambertian,
-                    'value': {
-                        'creator': creator.ground.AlbedoFromSignalLevel,
-                        'signal_level': {
-                            'creator': creator.l1b.ValueFromLevel1b,
-                            'field': "signal",
-                        },
-                        'solar_strength': np.array([4.87e21, 2.096e21, 1.15e21]),
-                    },
+                    # Filled in by derived creator
+                    'value': None,
                 },
             },
         },
@@ -412,6 +366,88 @@ def config_definition(l1b_file, met_file, sounding_id):
 
     return config_def
 
+def retrieval_config_definition(l1b_file, met_file, sounding_id):
+    l1b_obj = rf.HdfFile(l1b_file)
+    observation_id = OcoSoundingId(l1b_obj, sounding_id)
+
+    config_def = common_config_definition()
+
+    config_def['input'] = {
+        'creator': creator.base.SaveToCommon,
+        'l1b': oco_level1b(l1b_obj, observation_id),
+        'met': oco_meteorology(met_file, observation_id),
+    }
+
+    config_def['scenario'] = {
+        'creator': creator.base.SaveToCommon,
+        'time': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': "time",
+        },
+        'latitude': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': "latitude",
+        },
+        'longitude': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': "longitude",
+        },
+        'surface_height': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': "altitude",
+        },
+        'altitude': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': "altitude",
+        }, # same as surface_height
+        'solar_distance': {
+            'creator': creator.l1b.SolarDistanceFromL1b,
+        },
+        'solar_zenith': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': "solar_zenith",
+        },
+        'solar_azimuth': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': "solar_azimuth",
+        },
+        'observation_zenith': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': "sounding_zenith",
+        },
+        'observation_azimuth': {
+            'creator': creator.l1b.RelativeAzimuthFromLevel1b,
+        },
+        'relative_velocity': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': "relative_velocity",
+        },
+        'spectral_coefficient': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': 'spectral_coefficient',
+        },
+        'stokes_coefficients': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': "stokes_coefficient",
+        },
+    }
+
+    config_def['spec_win']['bad_sample_mask'] = oco_bad_sample_mask(l1b_obj, observation_id)
+
+    config_def['instrument']['ils_function']['delta_lambda'] = ils_delta_lambda(l1b_obj, observation_id)
+    config_def['instrument']['ils_function']['response'] = ils_response(l1b_obj, observation_id)
+
+    config_def['atmosphere']['ground']['lambertian']['value'] = {
+        'creator': creator.ground.AlbedoFromSignalLevel,
+        'signal_level': {
+            'creator': creator.l1b.ValueFromLevel1b,
+            'field': "signal",
+        },
+        'solar_strength': np.array([4.87e21, 2.096e21, 1.15e21]),
+    } 
+ 
+    return config_def
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
 
@@ -421,7 +457,7 @@ if __name__ == "__main__":
 
     sounding_id = "2017071110541471"
 
-    config_def = config_definition(l1b_file, met_file, sounding_id)
+    config_def = retrieval_config_definition(l1b_file, met_file, sounding_id)
     config_inst = process_config(config_def)
 
     from pprint import pprint
