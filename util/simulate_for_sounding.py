@@ -4,7 +4,7 @@ import os
 import sys
 from functools import lru_cache
 
-import h5py
+import netCDF4
 import numpy as np
 
 # Find where the code repository is located relative to this file
@@ -53,22 +53,36 @@ class RtSimulation(object):
 
     def save(self, output_file):
 
-        sounding_group = output_file.create_group(self.sounding_id)
-
-        for chan_idx, chan_rad in enumerate(self.radiances):
-            chan_group = sounding_group.create_group("Channel_%d" % (chan_idx + 1))
-
-            sd_ds = chan_group.create_dataset("spectral_domain", data=chan_rad.spectral_domain.data)
-            sd_ds.attrs['Units'] = chan_rad.spectral_domain.units.name
-
-            rad_ds = chan_group.create_dataset("radiance", data=chan_rad.spectral_range.data_ad.value)
-            rad_ds.attrs['Units'] = chan_rad.spectral_range.units.name
-
-            jac_ds = chan_group.create_dataset("jacobians", data=chan_rad.spectral_range.data_ad.jacobian)
+        sounding_group = output_file.createGroup(self.sounding_id)
 
         sv = self.config.retrieval.state_vector
-        sounding_group.create_dataset("state_vector_values", data=sv.state)
-        sounding_group.create_dataset("state_vector_names", data=np.string_(sv.state_vector_name))
+
+        sv_state_dim = output_file.createDimension('n_%s_sv' % (self.sounding_id), sv.state.shape[0])
+
+        sv_val = sounding_group.createVariable("state_vector_values", float, (sv_state_dim.name,))
+        sv_val[:] = sv.state
+
+        max_name_len = np.max([ len(n) for n in sv.state_vector_name ])
+        sv_chars_dim = output_file.createDimension('n_%d_sv_char', max_name_len)
+        
+        sv_name = sounding_group.createVariable("state_vector_names", 'S1', (sv_state_dim.name, sv_chars_dim.name))
+        sv_name[:] = netCDF4.stringtochar(np.array(sv.state_vector_name, 'S%d' % max_name_len))
+
+        for chan_idx, chan_rad in enumerate(self.radiances):
+            chan_group = sounding_group.createGroup("Channel_%d" % (chan_idx + 1))
+            
+            chan_dim = output_file.createDimension('n_%s_rad_%d' % (self.sounding_id, chan_idx+1), chan_rad.spectral_domain.data.shape[0])
+
+            sd_ds = chan_group.createVariable("spectral_domain", float, (chan_dim.name,))
+            sd_ds[:] = chan_rad.spectral_domain.data
+            sd_ds.units = chan_rad.spectral_domain.units.name
+
+            rad_ds = chan_group.createVariable("radiance", float, (chan_dim.name,))
+            rad_ds[:] = chan_rad.spectral_range.data_ad.value
+            rad_ds.units = chan_rad.spectral_range.units.name
+
+            jac_ds = chan_group.createVariable("jacobians", float, (chan_dim.name, sv_state_dim.name))
+            jac_ds[:] = chan_rad.spectral_range.data_ad.jacobian
 
 def main():
     from argparse import ArgumentParser
@@ -89,7 +103,8 @@ def main():
 
     args = parser.parse_args()
 
-    with h5py.File(args.output_file, "w") as output_file:
+    with netCDF4.Dataset(args.output_file, "w") as output_file:
+
         with open(args.sounding_ids_file) as sounding_id_list:
             for sounding_id_line in sounding_id_list:
                 sounding_id = sounding_id_line.strip()
