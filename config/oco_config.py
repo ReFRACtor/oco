@@ -75,7 +75,7 @@ def config_definition(l1b_file, met_file, sounding_id):
 
     config_def = {
         'creator': creator.base.SaveToCommon,
-        'order': ['input', 'common', 'spec_win', 'spectrum_sampling', 'instrument', 'atmosphere', 'radiative_transfer', 'forward_model' , 'retrieval'],
+        'order': ['input', 'common', 'scenario', 'spec_win', 'spectrum_sampling', 'instrument', 'atmosphere', 'radiative_transfer', 'forward_model' , 'retrieval'],
         'input': {
             'creator': creator.base.SaveToCommon,
             'l1b': oco_level1b(l1b_obj, observation_id),
@@ -94,6 +94,57 @@ def config_definition(l1b_file, met_file, sounding_id):
             'absco_base_path': absco_base_path,
             'constants': {
                 'creator': creator.common.DefaultConstants,
+            },
+        },
+        # Wrap the common temporal/spatial values into the scenario block which will
+        # be exposed to other creators
+        'scenario': {
+            'creator': creator.base.SaveToCommon,
+            'time': {
+                'creator': creator.l1b.ValueFromLevel1b,
+                'field': "time",
+            },
+            'latitude': {
+                'creator': creator.l1b.ValueFromLevel1b,
+                'field': "latitude",
+            },
+            'longitude': {
+                'creator': creator.l1b.ValueFromLevel1b,
+                'field': "longitude",
+            },
+            'surface_height': {
+                'creator': creator.l1b.ValueFromLevel1b,
+                'field': "altitude",
+            },
+            'altitude': {
+                'creator': creator.l1b.ValueFromLevel1b,
+                'field': "altitude",
+            }, # same as surface_height
+            'solar_distance': {
+                'creator': creator.l1b.SolarDistanceFromL1b,
+            },
+            'solar_zenith': {
+                'creator': creator.l1b.ValueFromLevel1b,
+                'field': "solar_zenith",
+            },
+            'solar_azimuth': {
+                'creator': creator.l1b.ValueFromLevel1b,
+                'field': "solar_azimuth",
+            },
+            'observation_zenith': {
+                'creator': creator.l1b.ValueFromLevel1b,
+                'field': "sounding_zenith",
+            },
+            'observation_azimuth': {
+                'creator': creator.l1b.RelativeAzimuthFromLevel1b,
+            },
+            'relative_velocity': {
+                'creator': creator.l1b.ValueFromLevel1b,
+                'field': "relative_velocity",
+            },
+            'spectral_coefficient': {
+                'creator': creator.l1b.ValueFromLevel1b,
+                'field': 'spectral_coefficient',
             },
             'stokes_coefficients': {
                 'creator': creator.l1b.ValueFromLevel1b,
@@ -126,8 +177,8 @@ def config_definition(l1b_file, met_file, sounding_id):
             'dispersion': {
                 'creator': creator.instrument.DispersionPolynomial,
                 'value': {
-                    'creator': creator.l1b.ValueFromLevel1b,
-                    'field': 'spectral_coefficient',
+                    'creator': creator.value.NamedCommonValue,
+                    'name': 'spectral_coefficient',
                 },
                 'number_samples': static_value("Instrument/Dispersion/number_pixel"),
                 'is_one_based': True,
@@ -160,14 +211,6 @@ def config_definition(l1b_file, met_file, sounding_id):
             },
             'altitudes': { 
                 'creator': creator.atmosphere.AltitudeHydrostatic,
-                'latitude': {
-                    'creator': creator.l1b.ValueFromLevel1b,
-                    'field': "latitude",
-                },
-                'surface_height': {
-                    'creator': creator.l1b.ValueFromLevel1b,
-                    'field': "altitude",
-                },
             },
             'absorber': {
                 'creator': creator.absorber.AbsorberAbsco,
@@ -281,31 +324,13 @@ def config_definition(l1b_file, met_file, sounding_id):
                             'creator': creator.l1b.ValueFromLevel1b,
                             'field': "signal",
                         },
-                        'solar_zenith': {
-                            'creator': creator.l1b.ValueFromLevel1b,
-                            'field': "solar_zenith",
-                        },
                         'solar_strength': np.array([4.87e21, 2.096e21, 1.15e21]),
-                        'solar_distance': {
-                            'creator': creator.l1b.SolarDistanceFromL1b,
-                        },
                     },
                 },
             },
         },
         'radiative_transfer': {
             'creator': creator.rt.LsiRt,
-            'solar_zenith': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "solar_zenith",
-            },
-            'observation_zenith': {
-                'creator': creator.l1b.ValueFromLevel1b,
-                'field': "sounding_zenith",
-            },
-            'observation_azimuth': {
-                'creator': creator.l1b.RelativeAzimuthFromLevel1b,
-            },
             'num_low_streams': 1,
             'num_high_streams': 8,
             'lsi_config_file': static_input_file,
@@ -319,26 +344,6 @@ def config_definition(l1b_file, met_file, sounding_id):
                     'creator': creator.solar_model.SolarAbsorptionAndContinuum,
                     'doppler': {
                         'creator': creator.solar_model.SolarDopplerShiftPolynomial,
-                        'time': {
-                            'creator': creator.l1b.ValueFromLevel1b,
-                            'field': "time",
-                        },
-                        'latitude': {
-                            'creator': creator.l1b.ValueFromLevel1b,
-                            'field': "latitude",
-                        },
-                        'solar_zenith': {
-                            'creator': creator.l1b.ValueFromLevel1b,
-                            'field': "solar_zenith",
-                        },
-                        'solar_azimuth': {
-                            'creator': creator.l1b.ValueFromLevel1b,
-                            'field': "solar_azimuth",
-                        },
-                        'altitude': {
-                            'creator': creator.l1b.ValueFromLevel1b,
-                            'field': "altitude",
-                        },
                     },
                     'absorption': {
                         'creator': creator.solar_model.SolarAbsorptionTable,
@@ -352,8 +357,8 @@ def config_definition(l1b_file, met_file, sounding_id):
                 'instrument_doppler': {
                     'creator': creator.instrument.InstrumentDoppler,
                     'value': {
-                        'creator': creator.l1b.ValueFromLevel1b,
-                        'field': "relative_velocity",
+                        'creator': creator.value.NamedCommonValue,
+                        'name': 'relative_velocity',
                     },
                 },
             },
