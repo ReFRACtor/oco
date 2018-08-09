@@ -31,7 +31,7 @@ class RtSimulation(object):
     @lru_cache()
     def config(self):
 
-        config_def = oco_config.config_definition(self.l1b_file, self.met_file, self.sounding_id)
+        config_def = oco_config.retrieval_config_definition(self.l1b_file, self.met_file, self.sounding_id)
         config_inst = process_config(config_def)
 
         #from pprint import pprint
@@ -53,7 +53,7 @@ class RtSimulation(object):
 
     def save(self, output_file):
 
-        sounding_group = output_file.createGroup(self.sounding_id)
+        sounding_group = output_file.createGroup("Sounding_%s" % self.sounding_id)
 
         sv = self.config.retrieval.state_vector
 
