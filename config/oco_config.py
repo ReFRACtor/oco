@@ -378,58 +378,31 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id):
         'met': oco_meteorology(met_file, observation_id),
     }
 
-    config_def['scenario'] = {
-        'creator': creator.base.SaveToCommon,
-        'time': {
+    # Set up scenario values that have the same name as they are named in the L1B
+    l1b_value_names = ['time', 'latitude', 'longitude', 'altitude', 'solar_zenith', 'solar_azimuth', 
+        "relative_velocity", "spectral_coefficient", "stokes_coefficients"]
+    values_from_l1b = { n:n for n in l1b_value_names }
+
+    # Set up scenario values with different names
+    values_from_l1b.update({
+        "surface_height": "altitude", 
+        "stokes_coefficients": "stokes_coefficient", 
+        "observation_zenith": "sounding_zenith"
+    })
+
+    for config_name, l1b_name in values_from_l1b.items():
+        config_def['scenario'][config_name] = {
             'creator': creator.l1b.ValueFromLevel1b,
-            'field': "time",
-        },
-        'latitude': {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': "latitude",
-        },
-        'longitude': {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': "longitude",
-        },
-        'surface_height': {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': "altitude",
-        },
-        'altitude': {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': "altitude",
-        }, # same as surface_height
-        'solar_distance': {
-            'creator': creator.l1b.SolarDistanceFromL1b,
-        },
-        'solar_zenith': {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': "solar_zenith",
-        },
-        'solar_azimuth': {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': "solar_azimuth",
-        },
-        'observation_zenith': {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': "sounding_zenith",
-        },
-        'observation_azimuth': {
-            'creator': creator.l1b.RelativeAzimuthFromLevel1b,
-        },
-        'relative_velocity': {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': "relative_velocity",
-        },
-        'spectral_coefficient': {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': 'spectral_coefficient',
-        },
-        'stokes_coefficients': {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': "stokes_coefficient",
-        },
+            'field': l1b_name,
+        }
+    
+    # Set up scenario values with creators
+    config_def['scenario']['solar_distance'] = {
+        'creator': creator.l1b.SolarDistanceFromL1b,
+    }
+
+    config_def['scenario']['observation_azimuth'] = {
+        'creator': creator.l1b.RelativeAzimuthFromLevel1b,
     }
 
     config_def['spec_win']['bad_sample_mask'] = oco_bad_sample_mask(l1b_obj, observation_id)
