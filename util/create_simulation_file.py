@@ -13,18 +13,18 @@ import numpy as np
 oco_repo_path = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 
 # Add the path to the configuration so it can be imported
-sys.path.append(os.path.join(oco_repo_path, 'config'))
+sys.path.append(os.path.join(oco_repo_path))
 
 # Import ReFRACtor framework
 from refractor.factory import process_config
 from refractor import framework as rf
 
 # Import configuration module
-import oco_config
+from config import oco_config
 
 logger = logging.getLogger()
 
-class SimulationFile(object): 
+class SimulationWriter(object): 
 
     def __init__(self, l1b_file, met_file, sounding_id_list, max_name_len=25):
         
@@ -34,7 +34,7 @@ class SimulationFile(object):
         self.met_file = met_file
         self.sounding_id_list = sounding_id_list
 
-        self.max_name_len = 25
+        self.max_name_len = 80
 
     @lru_cache()
     def config(self, sounding_id):
@@ -101,15 +101,16 @@ class SimulationFile(object):
 
         # Scenario
         self.scenario_group = output_file.createGroup('Scenario')
-        self.time = self.scenario_group.createVariable('time', float, (self.snd_id_dim.name,))
-        self.latitude = self.scenario_group.createVariable('latitude', float, (self.snd_id_dim.name,))
-        self.longitude = self.scenario_group.createVariable('longitude', float, (self.snd_id_dim.name,))
-        self.surface_height = self.scenario_group.createVariable('surface_height', float, (self.snd_id_dim.name,))
-        self.solar_zenith = self.scenario_group.createVariable('solar_zenith', float, (self.snd_id_dim.name,))
-        self.solar_azimuth = self.scenario_group.createVariable('solar_azimuth', float, (self.snd_id_dim.name,))
-        self.observation_zenith = self.scenario_group.createVariable('observation_zenith', float, (self.snd_id_dim.name,))
-        self.observation_azimuth = self.scenario_group.createVariable('observation_azimuth', float, (self.snd_id_dim.name,))
-        self.relative_velocity = self.scenario_group.createVariable('relative_velocity', float, (self.snd_id_dim.name,))
+        self.time = self.scenario_group.createVariable('time', float, (self.snd_id_dim.name, self.channel_dim.name))
+        self.latitude = self.scenario_group.createVariable('latitude', float, (self.snd_id_dim.name, self.channel_dim.name))
+        self.longitude = self.scenario_group.createVariable('longitude', float, (self.snd_id_dim.name, self.channel_dim.name))
+        self.surface_height = self.scenario_group.createVariable('surface_height', float, (self.snd_id_dim.name, self.channel_dim.name))
+        self.solar_zenith = self.scenario_group.createVariable('solar_zenith', float, (self.snd_id_dim.name, self.channel_dim.name))
+        self.solar_azimuth = self.scenario_group.createVariable('solar_azimuth', float, (self.snd_id_dim.name, self.channel_dim.name))
+        self.observation_zenith = self.scenario_group.createVariable('observation_zenith', float, (self.snd_id_dim.name, self.channel_dim.name))
+        self.observation_azimuth = self.scenario_group.createVariable('observation_azimuth', float, (self.snd_id_dim.name, self.channel_dim.name))
+        self.solar_distance = self.scenario_group.createVariable('solar_distance', float, (self.snd_id_dim.name, self.channel_dim.name))
+        self.relative_velocity = self.scenario_group.createVariable('relative_velocity', float, (self.snd_id_dim.name, self.channel_dim.name))
 
         self.spectral_coefficient = self.scenario_group.createVariable('spectral_coefficient', float, (self.snd_id_dim.name, self.channel_dim.name, self.spec_coeff_dim.name))
         self.stokes_coefficient = self.scenario_group.createVariable('stokes_coefficient', float, (self.snd_id_dim.name, self.channel_dim.name, self.stokes_coeff_dim.name))
@@ -122,7 +123,8 @@ class SimulationFile(object):
         # Atmosphere
         self.atmosphere_group = output_file.createGroup('Atmosphere')
 
-        self.pressure = self.atmosphere_group.createVariable('pressure', float, (self.snd_id_dim.name, self.lev_dim.name))
+        self.surface_pressure = self.atmosphere_group.createVariable('surface_pressure', float, (self.snd_id_dim.name))
+        self.pressure_levels = self.atmosphere_group.createVariable('pressure_levels', float, (self.snd_id_dim.name, self.lev_dim.name))
         self.temperature = self.atmosphere_group.createVariable('temperature', float, (self.snd_id_dim.name, self.lev_dim.name))
         
         # Absorbers
@@ -138,7 +140,7 @@ class SimulationFile(object):
 
         # Ground
         self.ground_group = self.atmosphere_group.createGroup('Ground')
-        self.albedo = self.ground_group.createVariable('lambertian_albedo', float, (self.snd_id_dim.name,))
+        self.albedo = self.ground_group.createVariable('lambertian_albedo', float, (self.snd_id_dim.name, self.channel_dim.name))
 
     def _fill_datasets(self, output_file, configs):
 
@@ -146,34 +148,40 @@ class SimulationFile(object):
 
         for snd_idx, snd_config in enumerate(configs):
             # Scenario data from L1B reader
-            # Using just value from first channel for now
+            # Copy per channel L1B values 
             l1b = snd_config.input.l1b
-            self.time[snd_idx] = l1b.time(0).pgs_time
-            self.time.units = "Seconds since 1993-01-01"
-
-            for val_name in ['latitude', 'longitude', 'solar_zenith', 'solar_azimuth', 'relative_velocity']:
-                logger.debug("Copying L1B value: %s" % val_name)
-                getattr(self, val_name)[snd_idx] = getattr(l1b, val_name)(0).value
-                getattr(self, val_name).unit = getattr(l1b, val_name)(0).units.name
-
-            for nc_name, l1b_name in {'surface_height': 'altitude', 'observation_zenith': 'sounding_zenith', 'observation_azimuth': 'sounding_azimuth'}.items():
-                logger.debug("Copying L1B value: %s" % l1b_name)
-                getattr(self, nc_name)[snd_idx] = getattr(l1b, l1b_name)(0).value
-                getattr(self, nc_name).unit = getattr(l1b, l1b_name)(0).units.name
-
             for chan_idx in range(l1b.number_spectrometer):
-                logger.debug("Copying L1B value: spectral_coefficient")
-                self.spectral_coefficient[snd_idx, chan_idx, :] = l1b.spectral_coefficient(chan_idx).value
-                self.spectral_coefficient.unit = l1b.spectral_coefficient(chan_idx).units.name
+                self.time[snd_idx] = l1b.time(chan_idx).pgs_time
+                self.time.units = "Seconds since 1993-01-01"
 
-                logger.debug("Copying L1B value: stokes_coefficient")
-                self.stokes_coefficient[snd_idx, chan_idx, :] = l1b.stokes_coefficient(chan_idx)
+                for val_name in ['latitude', 'longitude', 'solar_zenith', 'solar_azimuth', 'relative_velocity']:
+                    logger.debug("Copying L1B value: %s" % val_name)
+                    getattr(self, val_name)[snd_idx] = getattr(l1b, val_name)(chan_idx).value
+                    getattr(self, val_name).unit = getattr(l1b, val_name)(chan_idx).units.name
+
+                for nc_name, l1b_name in {'surface_height': 'altitude', 'observation_zenith': 'sounding_zenith', 'observation_azimuth': 'sounding_azimuth'}.items():
+                    logger.debug("Copying L1B value: %s" % l1b_name)
+                    getattr(self, nc_name)[snd_idx] = getattr(l1b, l1b_name)(chan_idx).value
+                    getattr(self, nc_name).unit = getattr(l1b, l1b_name)(chan_idx).units.name
+
+                    logger.debug("Copying L1B value: spectral_coefficient")
+                    self.spectral_coefficient[snd_idx, chan_idx, :] = l1b.spectral_coefficient(chan_idx).value
+                    self.spectral_coefficient.unit = l1b.spectral_coefficient(chan_idx).units.name
+
+                    logger.debug("Copying L1B value: stokes_coefficient")
+                    self.stokes_coefficient[snd_idx, chan_idx, :] = l1b.stokes_coefficient(chan_idx)
+
+            logger.debug("Copying L1B value: solar_distance")
+            self.solar_distance[snd_idx] = l1b.solar_distance.value
+            self.solar_distance.unit = l1b.solar_distance.units.name
 
             # ILS
             inst = snd_config.instrument
             for chan_idx in range(l1b.number_spectrometer):
                 logger.debug("Copying ils_delta_lambda for channel %d" % (chan_idx + 1))
                 self.ils_delta_lambda[snd_idx, chan_idx, :, :] = inst.ils(chan_idx).ils_function.delta_lambda
+                print("snd, chan", snd_idx, chan_idx)
+                print(self.ils_delta_lambda[snd_idx, chan_idx, :, :])
 
                 logger.debug("Copying ils_response for channel %d" % (chan_idx + 1))
                 self.ils_response[snd_idx, chan_idx, :, :] = inst.ils(chan_idx).ils_function.response
@@ -181,8 +189,11 @@ class SimulationFile(object):
             # Atmosphere
             logger.debug("Copying pressure")
             atm = snd_config.atmosphere
-            self.pressure[snd_idx, :] = atm.pressure.pressure_grid.value.value
-            self.pressure.unit = atm.pressure.pressure_grid.units.name
+            self.surface_pressure[snd_idx] = atm.pressure.surface_pressure.value.value
+            self.surface_pressure.unit = atm.pressure.surface_pressure.units.name
+            
+            self.pressure_levels[snd_idx, :] = atm.pressure.pressure_grid.value.value
+            self.pressure_levels.unit = atm.pressure.pressure_grid.units.name
 
             logger.debug("Copying temperature")
             temp_adwu = atm.temperature.temperature_grid(atm.pressure)
@@ -208,7 +219,9 @@ class SimulationFile(object):
 
             # Ground
             logger.debug("Copying ground albedo")
-            self.albedo[snd_idx] = atm.ground.coefficient.value[0]
+            for chan_idx in range(l1b.number_spectrometer):
+                ref_point = atm.ground.reference_point(0)
+                self.albedo[snd_idx, chan_idx] = atm.ground.albedo(ref_point, chan_idx).value
 
     def save(self, output_file):
 
@@ -258,7 +271,7 @@ def main():
             for sounding_id_line in sounding_id_file:
                 sounding_id_list.append( sounding_id_line.strip() )
 
-        sim_file = SimulationFile(args.l1b_file, args.met_file, sounding_id_list)
+        sim_file = SimulationWriter(args.l1b_file, args.met_file, sounding_id_list)
         sim_file.save(output_file)
 
 if __name__ == "__main__":

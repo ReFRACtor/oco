@@ -11,6 +11,8 @@ from refractor import framework as rf
 
 from oco import Level1bOco, OcoMetFile, OcoSoundingId, OcoNoiseModel
 
+from .simulation import SimulationFile
+
 if "ABSCO_PATH" in os.environ:
     absco_base_path = os.environ['ABSCO_PATH']
 else:
@@ -109,7 +111,7 @@ def common_config_definition():
             'observation_azimuth': None,
             'relative_velocity': None,
             'spectral_coefficient': None,
-            'stokes_coefficients': None,
+            'stokes_coefficient': None,
         },
         'spec_win': {
             'creator': creator.forward_model.SpectralWindowRange,
@@ -380,13 +382,12 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id):
 
     # Set up scenario values that have the same name as they are named in the L1B
     l1b_value_names = ['time', 'latitude', 'longitude', 'altitude', 'solar_zenith', 'solar_azimuth', 
-        "relative_velocity", "spectral_coefficient", "stokes_coefficients"]
+        "relative_velocity", "spectral_coefficient", "stokes_coefficient"] 
     values_from_l1b = { n:n for n in l1b_value_names }
 
     # Set up scenario values with different names
     values_from_l1b.update({
         "surface_height": "altitude", 
-        "stokes_coefficients": "stokes_coefficient", 
         "observation_zenith": "sounding_zenith"
     })
 
@@ -407,9 +408,11 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id):
 
     config_def['spec_win']['bad_sample_mask'] = oco_bad_sample_mask(l1b_obj, observation_id)
 
+    # Instrument values
     config_def['instrument']['ils_function']['delta_lambda'] = ils_delta_lambda(l1b_obj, observation_id)
     config_def['instrument']['ils_function']['response'] = ils_response(l1b_obj, observation_id)
 
+    # Ground albedo from radiance continuum level
     config_def['atmosphere']['ground']['lambertian']['value'] = {
         'creator': creator.ground.AlbedoFromSignalLevel,
         'signal_level': {
@@ -419,6 +422,74 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id):
         'solar_strength': np.array([4.87e21, 2.096e21, 1.15e21]),
     } 
  
+    return config_def
+
+def simulation_config_definition(sim_file, sim_index):
+
+    config_def = common_config_definition()
+
+    # Load simulation file
+    sim_data = SimulationFile(sim_file, sim_index)
+
+    # Load scenario values
+    for val_name in config_def['scenario'].keys():
+        if val_name != "creator":
+            config_def['scenario'][val_name] = getattr(sim_data.scenario, val_name)
+
+    # Instrument values
+    config_def['instrument']['ils_function']['delta_lambda'] = sim_data.instrument.ils_delta_lambda
+    config_def['instrument']['ils_function']['response'] = sim_data.instrument.ils_response
+
+    # Atmosphere
+    config_def['atmosphere']['pressure'] = {
+        'creator': creator.atmosphere.PressureGrid,
+        'pressure_levels': sim_data.atmosphere.pressure_levels,
+        'value': sim_data.atmosphere.surface_pressure,
+    }
+
+    config_def['atmosphere']['temperature'] = {
+        'creator': creator.atmosphere.TemperatureLevelOffset,
+        'temperature_levels': sim_data.atmosphere.temperature,
+        'value': np.array([0.0]),
+    }
+
+    # Absorber values
+    config_def['atmosphere']['gases'] = sim_data.absorber.molecule_names
+
+    for name in sim_data.absorber.molecule_names:
+        config_def['atmosphere']['absorber'][name]["vmr"] = {
+            'creator': creator.absorber.AbsorberVmrLevel,
+            'value': sim_data.absorber.vmr(name),
+        }
+
+    # Aerosol values, reset to start with an empty aerosol configuration
+    config_def['atmosphere']['aerosol'] = {
+        'creator': creator.aerosol.AerosolOptical,
+        'aerosols': sim_data.aerosol.particle_names,
+    }
+
+    for name in sim_data.aerosol.particle_names:
+        config_def['atmosphere']['aerosol'][name] = {
+            'creator': creator.aerosol.AerosolDefinition,
+            'extinction': {
+                'creator': creator.aerosol.AerosolShapeGaussian,
+                'value': sim_data.aerosol.gaussian_param(name),
+            },
+            'properties': {
+                'creator': creator.aerosol.AerosolPropertyHdf,
+                'filename': aerosol_prop_file,
+                'prop_name': sim_data.aerosol.property_name(name),
+            },
+        }
+
+    # Ground lambertian
+    config_def['atmosphere']['ground']['lambertian']['value'] = sim_data.ground.lambertian_albedo
+ 
+    # Require only the state vector to be set up, this gives us jacobians 
+    # without worrying about satisfying solver requirements
+    config_def['retrieval']['creator'] = creator.retrieval.RetrievalBaseCreator
+
+
     return config_def
 
 if __name__ == "__main__":
