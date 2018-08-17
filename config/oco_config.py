@@ -171,7 +171,7 @@ def common_config_definition():
                 'creator': creator.atmosphere.TemperatureMet,
                 'value': static_value("Temperature/Offset/a_priori")
             },
-            'altitudes': { 
+            'altitude': { 
                 'creator': creator.atmosphere.AltitudeHydrostatic,
             },
             'absorber': {
