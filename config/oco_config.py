@@ -103,7 +103,6 @@ def common_config_definition():
             'latitude': None,
             'longitude': None,
             'surface_height': None,
-            'altitude': None, # same as surface_height
             'solar_distance': None,
             'solar_zenith': None,
             'solar_azimuth': None,
@@ -381,7 +380,7 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id):
     }
 
     # Set up scenario values that have the same name as they are named in the L1B
-    l1b_value_names = ['time', 'latitude', 'longitude', 'altitude', 'solar_zenith', 'solar_azimuth', 
+    l1b_value_names = ['time', 'latitude', 'longitude', 'solar_zenith', 'solar_azimuth', 
         "relative_velocity", "spectral_coefficient", "stokes_coefficient"] 
     values_from_l1b = { n:n for n in l1b_value_names }
 
