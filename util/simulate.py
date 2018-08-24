@@ -162,7 +162,8 @@ def main():
         for arg_idx in args.index:
             if "-" in arg_idx:
                 beg, end = re.split("\s*-\s*", arg_idx)
-                indexes.append(range(int(beg), int(end)+1))
+                for sim_index in range(int(beg), int(end)+1):
+                    indexes.append(sim_index)
             else:
                 indexes.append(int(arg_idx))
 
