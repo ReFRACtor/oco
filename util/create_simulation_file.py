@@ -3,7 +3,6 @@
 import os
 import sys
 import logging
-from functools import lru_cache
 from collections import OrderedDict
 
 import netCDF4
@@ -36,7 +35,6 @@ class SimulationWriter(object):
 
         self.max_name_len = 80
 
-    @lru_cache()
     def config(self, sounding_id):
 
         logging.debug("Loading configuration for sounding: %s" % sounding_id)
@@ -47,7 +45,7 @@ class SimulationWriter(object):
 
         return config_inst
 
-    def _create_dims(self, output_file, configs):
+    def _create_dims(self, output_file):
 
         logging.debug("Setting up file dimensions")
 
@@ -60,7 +58,10 @@ class SimulationWriter(object):
         num_stokes_coeff = 0
         num_samples = 0
         num_ils_values = 0
-        for snd_config in configs:
+
+        for sid in self.sounding_id_list:
+            snd_config = self.config(sid)
+
             atm = snd_config.atmosphere
             max_level = max(max_level, atm.pressure.number_level)
             max_gas = max(max_gas, atm.absorber.number_species)
@@ -142,11 +143,13 @@ class SimulationWriter(object):
         self.ground_group = self.atmosphere_group.createGroup('Ground')
         self.albedo = self.ground_group.createVariable('lambertian_albedo', float, (self.snd_id_dim.name, self.channel_dim.name))
 
-    def _fill_datasets(self, output_file, configs):
+    def _fill_datasets(self, output_file):
 
         logger.debug("Filling datasets with values from configuration")
 
-        for snd_idx, snd_config in enumerate(configs):
+        for snd_idx, sid in enumerate(self.sounding_id_list):
+            snd_config = self.config(sid)
+ 
             # Scenario data from L1B reader
             # Copy per channel L1B values 
             l1b = snd_config.input.l1b
@@ -180,8 +183,6 @@ class SimulationWriter(object):
             for chan_idx in range(l1b.number_spectrometer):
                 logger.debug("Copying ils_delta_lambda for channel %d" % (chan_idx + 1))
                 self.ils_delta_lambda[snd_idx, chan_idx, :, :] = inst.ils(chan_idx).ils_function.delta_lambda
-                print("snd, chan", snd_idx, chan_idx)
-                print(self.ils_delta_lambda[snd_idx, chan_idx, :, :])
 
                 logger.debug("Copying ils_response for channel %d" % (chan_idx + 1))
                 self.ils_response[snd_idx, chan_idx, :, :] = inst.ils(chan_idx).ils_function.response
@@ -227,16 +228,14 @@ class SimulationWriter(object):
 
         logger.debug("Writing to file: %s" % output_file.filepath)
 
-        configs = [ self.config(sid) for sid in self.sounding_id_list ]
-
         # Create output file dimension objects
-        self._create_dims(output_file, configs)
+        self._create_dims(output_file)
 
         # Create datasets to fill information from soundings
         self._create_datasets(output_file)
 
         # Fill datasets with information from configurations
-        self._fill_datasets(output_file, configs)
+        self._fill_datasets(output_file)
 
 def main():
     from argparse import ArgumentParser

@@ -4,7 +4,6 @@ import os
 import re
 import sys
 import logging
-from functools import lru_cache
 
 import netCDF4
 import numpy as np
@@ -30,7 +29,6 @@ class RtSimulation(object):
         self.sim_file = simulation_file
         self.sim_indexes = simulation_indexes
 
-    @lru_cache()
     def config(self, index):
 
         logging.debug("Loading configuration for #%d" % (index+1))
@@ -55,23 +53,25 @@ class RtSimulation(object):
 
         return radiances
 
-    def _create_dims(self, output_file, configs):
+    def _create_dims(self, output_file):
 
         logging.debug("Setting up file dimensions")
 
-        self.sim_dim = output_file.createDimension('n_simulation', len(configs))
+        self.sim_dim = output_file.createDimension('n_simulation', len(self.sim_indexes))
 
         max_sv_len = 0
         max_sv_name = 0
         num_channels = 0
-        for config in configs:
-            sv = config.retrieval.state_vector
+        for sim_index in self.sim_indexes:
+            sim_config = self.config(sim_index)
+
+            sv = sim_config.retrieval.state_vector
 
             max_sv_len = max(max_sv_len, sv.state.shape[0])
             max_config_name_len = np.max([ len(n) for n in sv.state_vector_name ])
             max_sv_name = max(max_sv_name, max_config_name_len)
 
-            num_channels = config.common.num_channels
+            num_channels = sim_config.common.num_channels
 
         self.sv_dim = output_file.createDimension('n_state_vector', max_sv_len)
 
@@ -95,19 +95,21 @@ class RtSimulation(object):
         self.radiance = output_file.createVariable("radiance", float, (self.sim_dim.name, self.channel_dim.name, self.grid_dim.name))
         self.jacobian = output_file.createVariable("jacobian", float, (self.sim_dim.name, self.channel_dim.name, self.grid_dim.name, self.sv_dim.name))
 
-    def _fill_datasets(self, output_file, configs):
+    def _fill_datasets(self, output_file):
 
-        for cfg_idx, config in enumerate(configs):
+        for cfg_idx, sim_index in enumerate(self.sim_indexes):
+            sim_config = self.config(sim_index)
+
             sim_index = self.sim_indexes[cfg_idx]
             self.sim_index[cfg_idx] = sim_index
 
-            sv = config.retrieval.state_vector
+            sv = sim_config.retrieval.state_vector
             num_sv = sv.state.shape[0]
 
             self.sv_val[cfg_idx, :num_sv] = sv.state
             self.sv_name[cfg_idx, :num_sv] = netCDF4.stringtochar(np.array(sv.state_vector_name, 'S%d' % self.sv_name_dim.size))
 
-            for chan_idx, chan_rad in enumerate(self.radiances(sim_index, config)):
+            for chan_idx, chan_rad in enumerate(self.radiances(sim_index, sim_config)):
                 num_rad = chan_rad.spectral_domain.data.shape[0]
 
                 self.spectral_domain[cfg_idx, chan_idx, :num_rad] = chan_rad.spectral_domain.data
@@ -122,16 +124,14 @@ class RtSimulation(object):
 
         logger.debug("Writing to file: %s" % output_file.filepath)
 
-        configs = [ self.config(sim_idx) for sim_idx in self.sim_indexes ]
-
         # Create output file dimension objects
-        self._create_dims(output_file, configs)
+        self._create_dims(output_file)
 
         # Create datasets to fill information from soundings
         self._create_datasets(output_file)
 
         # Fill datasets with information from configurations
-        self._fill_datasets(output_file, configs)
+        self._fill_datasets(output_file)
 
 def main():
     from argparse import ArgumentParser
