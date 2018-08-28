@@ -29,6 +29,9 @@ class RtSimulation(object):
         self.sim_file = simulation_file
         self.sim_indexes = simulation_indexes
 
+        with netCDF4.Dataset(simulation_file) as sim_contents:
+            self.all_obs_ids = sim_contents['/Scenario/observation_id'][:]
+
     def config(self, index):
 
         logging.debug("Loading configuration for #%d" % (index+1))
@@ -87,6 +90,7 @@ class RtSimulation(object):
         logger.debug("Creating file datasets")
 
         self.sim_index = output_file.createVariable("simulation_index", float, (self.sim_dim.name,))
+        self.obs_id = output_file.createVariable("observation_id", int, (self.sim_dim.name,))
 
         self.sv_val = output_file.createVariable("state_vector_values", float, (self.sim_dim.name, self.sv_dim.name,))
         self.sv_name = output_file.createVariable("state_vector_names", 'S1', (self.sim_dim.name, self.sv_dim.name, self.sv_name_dim.name))
@@ -102,6 +106,8 @@ class RtSimulation(object):
 
             sim_index = self.sim_indexes[cfg_idx]
             self.sim_index[cfg_idx] = sim_index
+
+            self.obs_id[cfg_idx] = self.all_obs_ids[sim_index]
 
             sv = sim_config.retrieval.state_vector
             num_sv = sv.state.shape[0]

@@ -102,6 +102,7 @@ class SimulationWriter(object):
 
         # Scenario
         self.scenario_group = output_file.createGroup('Scenario')
+        self.obs_id = self.scenario_group.createVariable('observation_id', np.int64, (self.snd_id_dim.name,))
         self.time = self.scenario_group.createVariable('time', float, (self.snd_id_dim.name, self.channel_dim.name))
         self.latitude = self.scenario_group.createVariable('latitude', float, (self.snd_id_dim.name, self.channel_dim.name))
         self.longitude = self.scenario_group.createVariable('longitude', float, (self.snd_id_dim.name, self.channel_dim.name))
@@ -149,6 +150,8 @@ class SimulationWriter(object):
 
         for snd_idx, sid in enumerate(self.sounding_id_list):
             snd_config = self.config(sid)
+
+            self.obs_id[snd_idx] = int(sid)
  
             # Scenario data from L1B reader
             # Copy per channel L1B values 
