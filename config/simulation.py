@@ -121,10 +121,6 @@ class GroundValues(DataGroupValues):
     def __init__(self, file_contents, index):
         super().__init__(file_contents, index, "Atmosphere/Ground")
 
-    def lambertian_albedo(self):
-        value = self.__getattr__("lambertian_albedo")
-        return value.reshape((value.shape[0], 1))
-
 class SimulationFile(object):
 
     def __init__(self, filename, index):

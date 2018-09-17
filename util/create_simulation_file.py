@@ -25,7 +25,7 @@ logger = logging.getLogger()
 
 class SimulationWriter(object): 
 
-    def __init__(self, l1b_file, met_file, sounding_id_list, max_name_len=25):
+    def __init__(self, l1b_file, met_file, sounding_id_list, max_name_len=25, albedo_degree=4):
         
         logging.debug("Creating simulation file using L1B: %s, Met: %s" % (l1b_file, met_file))
 
@@ -34,6 +34,7 @@ class SimulationWriter(object):
         self.sounding_id_list = sounding_id_list
 
         self.max_name_len = 80
+        self.albedo_degree = albedo_degree
 
     def config(self, sounding_id):
 
@@ -93,6 +94,8 @@ class SimulationWriter(object):
         # Length of names of gas and aerosols
         self.name_len = output_file.createDimension('name_length', self.max_name_len)
 
+        self.albedo_poly_dim = output_file.createDimension('n_albedo_poly', self.albedo_degree + 1)
+
         # Number of aerosol parameters
         self.aer_param_dim = output_file.createDimension('n_aerosol_parameters', 3)
 
@@ -142,7 +145,7 @@ class SimulationWriter(object):
 
         # Ground
         self.ground_group = self.atmosphere_group.createGroup('Ground')
-        self.albedo = self.ground_group.createVariable('lambertian_albedo', float, (self.snd_id_dim.name, self.channel_dim.name))
+        self.albedo = self.ground_group.createVariable('lambertian_albedo', float, (self.snd_id_dim.name, self.channel_dim.name, self.albedo_poly_dim.name))
 
     def _fill_datasets(self, output_file):
 
@@ -225,7 +228,8 @@ class SimulationWriter(object):
             logger.debug("Copying ground albedo")
             for chan_idx in range(l1b.number_spectrometer):
                 ref_point = atm.ground.reference_point(0)
-                self.albedo[snd_idx, chan_idx] = atm.ground.albedo(ref_point, chan_idx).value
+                self.albedo[snd_idx, chan_idx, 0] = atm.ground.albedo(ref_point, chan_idx).value
+                self.albedo[snd_idx, chan_idx, 1:] = 0.0
 
     def save(self, output_file):
 
