@@ -14,13 +14,13 @@ class DataGroupValues(object):
         dataset = self.group_data[name]
         data_value = dataset[self.index, ...]
 
-        if hasattr(dataset, "unit"):
+        if hasattr(dataset, "units"):
             ndim = len(dataset.shape) - 1
             if ndim > 0:
                 ArrayAdClass = getattr(rf, "ArrayWithUnit_double_%d" % ndim)
-                return ArrayAdClass(data_value, dataset.unit)
+                return ArrayAdClass(data_value, dataset.units)
             else:
-                return rf.DoubleWithUnit(float(data_value), dataset.unit)
+                return rf.DoubleWithUnit(float(data_value), dataset.units)
         else:
             return data_value
 

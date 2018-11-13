@@ -166,23 +166,23 @@ class SimulationWriter(object):
                 for val_name in ['latitude', 'longitude', 'solar_zenith', 'solar_azimuth', 'relative_velocity']:
                     logger.debug("Copying L1B value: %s" % val_name)
                     getattr(self, val_name)[snd_idx] = getattr(l1b, val_name)(chan_idx).value
-                    getattr(self, val_name).unit = getattr(l1b, val_name)(chan_idx).units.name
+                    getattr(self, val_name).units = getattr(l1b, val_name)(chan_idx).units.name
 
                 for nc_name, l1b_name in {'surface_height': 'altitude', 'observation_zenith': 'sounding_zenith', 'observation_azimuth': 'sounding_azimuth'}.items():
                     logger.debug("Copying L1B value: %s" % l1b_name)
                     getattr(self, nc_name)[snd_idx] = getattr(l1b, l1b_name)(chan_idx).value
-                    getattr(self, nc_name).unit = getattr(l1b, l1b_name)(chan_idx).units.name
+                    getattr(self, nc_name).units = getattr(l1b, l1b_name)(chan_idx).units.name
 
                     logger.debug("Copying L1B value: spectral_coefficient")
                     self.spectral_coefficient[snd_idx, chan_idx, :] = l1b.spectral_coefficient(chan_idx).value
-                    self.spectral_coefficient.unit = l1b.spectral_coefficient(chan_idx).units.name
+                    self.spectral_coefficient.units = l1b.spectral_coefficient(chan_idx).units.name
 
                     logger.debug("Copying L1B value: stokes_coefficient")
                     self.stokes_coefficient[snd_idx, chan_idx, :] = l1b.stokes_coefficient(chan_idx)
 
             logger.debug("Copying L1B value: solar_distance")
             self.solar_distance[snd_idx] = l1b.solar_distance.value
-            self.solar_distance.unit = l1b.solar_distance.units.name
+            self.solar_distance.units = l1b.solar_distance.units.name
 
             # ILS
             inst = snd_config.instrument
@@ -197,18 +197,18 @@ class SimulationWriter(object):
             logger.debug("Copying pressure")
             atm = snd_config.atmosphere
             self.surface_pressure[snd_idx] = atm.pressure.surface_pressure.value.value
-            self.surface_pressure.unit = atm.pressure.surface_pressure.units.name
+            self.surface_pressure.units = atm.pressure.surface_pressure.units.name
             
             self.pressure_levels[snd_idx, :] = atm.pressure.pressure_grid.value.value
-            self.pressure_levels.unit = atm.pressure.pressure_grid.units.name
+            self.pressure_levels.units = atm.pressure.pressure_grid.units.name
 
             logger.debug("Copying temperature")
             temp_adwu = atm.temperature.temperature_grid(atm.pressure)
             self.temperature[snd_idx, :] = temp_adwu.value.value
-            self.temperature.unit = temp_adwu.units.name
+            self.temperature.units = temp_adwu.units.name
 
             # Absorber
-            self.gas_vmr.unit = "VMR"
+            self.gas_vmr.units = "VMR"
             for gas_index in range(atm.absorber.number_species):
                 gas_name = atm.absorber.gas_name(gas_index)
                 logger.debug("Copying absorber: %s" % gas_name)
