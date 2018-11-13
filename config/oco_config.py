@@ -1,6 +1,7 @@
 import os
 import h5py
 import logging
+from enum import Enum
 
 import numpy as np
 
@@ -13,10 +14,7 @@ from oco import Level1bOco, OcoMetFile, OcoSoundingId, OcoNoiseModel
 
 from .simulation import SimulationFile
 
-if "ABSCO_PATH" in os.environ:
-    absco_base_path = os.environ['ABSCO_PATH']
-else:
-    absco_base_path = '/mnt/data1/absco/v5.0.0'
+absco_base_path = os.environ['ABSCO_PATH']
 
 config_dir = os.path.dirname(__file__)
 
@@ -26,6 +24,10 @@ solar_file = os.path.join(config_dir, "oco_solar_model.h5")
 aerosol_prop_file = os.path.join(os.environ["REFRACTOR_INPUTS"], "l2_aerosol_combined.h5")
 reference_atm_file =  os.path.join(os.environ["REFRACTOR_INPUTS"], "reference_atmosphere.h5")
 covariance_file = os.path.join(config_dir, "retrieval_covariance.h5")
+
+class AbscoType(Enum):
+    Legacy = 1
+    AER = 2
 
 # Helpers to abstract away getting data out of the static input file
 def static_value(dataset, dtype=None):
@@ -72,7 +74,104 @@ def ils_response(hdf_obj, observation_id):
     return hdf_obj.read_double_4d("/InstrumentHeader/ils_relative_response")[:, sounding_idx, :, :]
 
 # Common configuration defintion shared amonst retrieval and simulation types of configuration
-def common_config_definition():
+def common_config_definition(absco_type=AbscoType.Legacy):
+
+    absorber_legacy = {
+        'creator': creator.absorber.AbsorberAbsco,
+        'gases': ['CO2', 'H2O', 'O2'],
+        'CO2': {
+            'creator': creator.absorber.AbsorberGasDefinition,
+            'vmr': {
+                'creator': creator.absorber.AbsorberVmrLevel,
+                'value': {
+                    'creator': creator.absorber.GasVmrAprioriMetL1b,
+                    'reference_atm_file': reference_atm_file,
+                },
+            },
+            'absorption': {
+                'creator': creator.absorber.AbscoLegacy,
+                'table_scale': [1.0, 1.0, 1.004],
+                'filename': "{absco_base_path}/co2_devi2015_wco2scale-nist_sco2scale-unity.h5",
+            },
+        },
+        'H2O': {
+            'creator': creator.absorber.AbsorberGasDefinition,
+            'vmr': {
+                'creator': creator.absorber.AbsorberVmrMet,
+                'value': np.array([1.0]),
+            },
+            'absorption': {
+                'creator': creator.absorber.AbscoLegacy,
+                'table_scale': 1.0,
+                'filename': "{absco_base_path}/h2o_hitran12.h5",
+            },
+        },
+        'O2': {
+            'creator': creator.absorber.AbsorberGasDefinition,
+            'vmr': {
+                'creator': creator.absorber.AbsorberVmrLevel,
+                'value': {
+                    'creator': creator.atmosphere.ConstantForAllLevels,
+                    'value': static_value("Gas/O2/average_mole_fraction")[0],
+                },
+                'retrieved': False,
+            },
+            'absorption': {
+                'creator': creator.absorber.AbscoLegacy,
+                'table_scale': 1.0,
+                'filename': "{absco_base_path}/o2_v151005_cia_mlawer_v151005r1_narrow.h5",
+             },
+        },
+    }
+
+    absorber_aer = {
+        'creator': creator.absorber.AbsorberAbsco,
+        'gases': ['CO2', 'H2O', 'O2'],
+        'CO2': {
+            'creator': creator.absorber.AbsorberGasDefinition,
+            'vmr': {
+                'creator': creator.absorber.AbsorberVmrLevel,
+                'value': {
+                    'creator': creator.absorber.GasVmrAprioriMetL1b,
+                    'reference_atm_file': reference_atm_file,
+                },
+            },
+            'absorption': {
+                'creator': creator.absorber.AbscoAer,
+                'table_scale': [1.0, 1.0, 1.004],
+                'filename': "{absco_base_path}/{gas!u}_04760-06300_v0.0_init.nc",
+            },
+        },
+        'H2O': {
+            'creator': creator.absorber.AbsorberGasDefinition,
+            'vmr': {
+                'creator': creator.absorber.AbsorberVmrMet,
+                'value': np.array([1.0]),
+            },
+            'absorption': {
+                'creator': creator.absorber.AbscoAer,
+                'table_scale': 1.0,
+                'filename': "{absco_base_path}/H2O_04760-13230_v0.0_init.nc",
+            },
+        },
+        'O2': {
+            'creator': creator.absorber.AbsorberGasDefinition,
+            'vmr': {
+                'creator': creator.absorber.AbsorberVmrLevel,
+                'value': {
+                    'creator': creator.atmosphere.ConstantForAllLevels,
+                    'value': static_value("Gas/O2/average_mole_fraction")[0],
+                },
+                'retrieved': False,
+            },
+            'absorption': {
+                'creator': creator.absorber.AbscoAer,
+                'table_scale': 1.0,
+                'filename': "{absco_base_path}/O2_06140-13230_v0.0_init.nc",
+             },
+        },
+    }
+
     config_def = {
         'creator': creator.base.SaveToCommon,
         'order': ['input', 'common', 'scenario', 'spec_win', 'spectrum_sampling', 'instrument', 'atmosphere', 'radiative_transfer', 'forward_model' , 'retrieval'],
@@ -173,53 +272,7 @@ def common_config_definition():
             'altitude': { 
                 'creator': creator.atmosphere.AltitudeHydrostatic,
             },
-            'absorber': {
-                'creator': creator.absorber.AbsorberAbsco,
-                'gases': ['CO2', 'H2O', 'O2'],
-                'CO2': {
-                    'creator': creator.absorber.AbsorberGasDefinition,
-                    'vmr': {
-                        'creator': creator.absorber.AbsorberVmrLevel,
-                        'value': {
-                            'creator': creator.absorber.GasVmrAprioriMetL1b,
-                            'reference_atm_file': reference_atm_file,
-                        },
-                    },
-                    'absorption': {
-                        'creator': creator.absorber.AbscoHdf,
-                        'table_scale': [1.0, 1.0, 1.004],
-                        'filename': "{absco_base_path}/co2_devi2015_wco2scale-nist_sco2scale-unity.h5",
-                    },
-                },
-                'H2O': {
-                    'creator': creator.absorber.AbsorberGasDefinition,
-                    'vmr': {
-                        'creator': creator.absorber.AbsorberVmrMet,
-                        'value': np.array([1.0]),
-                    },
-                    'absorption': {
-                        'creator': creator.absorber.AbscoHdf,
-                        'table_scale': 1.0,
-                        'filename': "{absco_base_path}/h2o_hitran12.h5",
-                    },
-                },
-                'O2': {
-                    'creator': creator.absorber.AbsorberGasDefinition,
-                    'vmr': {
-                        'creator': creator.absorber.AbsorberVmrLevel,
-                        'value': {
-                            'creator': creator.atmosphere.ConstantForAllLevels,
-                            'value': static_value("Gas/O2/average_mole_fraction")[0],
-                        },
-                        'retrieved': False,
-                    },
-                    'absorption': {
-                        'creator': creator.absorber.AbscoHdf,
-                        'table_scale': 1.0,
-                        'filename': "{absco_base_path}/o2_v151005_cia_mlawer_v151005r1_narrow.h5",
-                     },
-                },
-            },
+            'absorber': None, # Determined by switch to config
             'aerosol': {
                 'creator': creator.aerosol.AerosolOptical,
                 'aerosols': [ "kahn_2b", "kahn_3b", "water", "ice" ],
@@ -365,13 +418,20 @@ def common_config_definition():
         },
     }
 
+    if absco_type == AbscoType.Legacy:
+        config_def['atmosphere']['absorber'] = absorber_legacy
+    elif absco_type == AbscoType.AER:
+        config_def['atmosphere']['absorber'] = absorber_aer
+    else:
+        raise param.ParamError("Invalid absco type: {}".format(absco_type))
+
     return config_def
 
-def retrieval_config_definition(l1b_file, met_file, sounding_id):
+def retrieval_config_definition(l1b_file, met_file, sounding_id, **kwargs):
     l1b_obj = rf.HdfFile(l1b_file)
     observation_id = OcoSoundingId(l1b_obj, sounding_id)
 
-    config_def = common_config_definition()
+    config_def = common_config_definition(**kwargs)
 
     config_def['input'] = {
         'creator': creator.base.SaveToCommon,
@@ -423,9 +483,9 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id):
  
     return config_def
 
-def simulation_config_definition(sim_file, sim_index):
+def simulation_config_definition(sim_file, sim_index, **kwargs):
 
-    config_def = common_config_definition()
+    config_def = common_config_definition(**kwargs)
 
     # Load simulation file
     sim_data = SimulationFile(sim_file, sim_index)
