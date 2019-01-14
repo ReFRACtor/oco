@@ -6,6 +6,11 @@ find_package(PythonLibs 3.0 REQUIRED)
 find_package(PythonInterp 3.0 REQUIRED)
 include_directories(${PYTHON_INCLUDE_PATH})
 
+# On some systems we need to have the Python LIBRARY included in the list of third party libraries
+# to properly compile oco_test
+list(APPEND THIRDPARTY_LIBRARIES ${PYTHON_LIBRARIES})
+set(THIRDPARTY_LIBRARIES ${THIRDPARTY_LIBRARIES} PARENT_SCOPE)
+
 # Find NumPy
 find_package(NumPy REQUIRED)
 include_directories(${NUMPY_INCLUDE_DIRS})
