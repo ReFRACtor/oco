@@ -249,14 +249,8 @@ void Level1bOco::initialize()
   }
 }
 
-SpectralRange Level1bOco::radiance_no_uncertainty(int Spec_index) const
+std::string Level1bOco::radiance_dataset_name(int Spec_index) const
 {
-  firstIndex i1; secondIndex i2;
-
-//-----------------------------------------------------------------------
-/// Radiance dataset names hardcoded for now.
-//-----------------------------------------------------------------------
-
   std::string field;
   switch(Spec_index) {
   case 0:
@@ -271,6 +265,26 @@ SpectralRange Level1bOco::radiance_no_uncertainty(int Spec_index) const
   default:
     throw Exception("Unrecognized Spec_Index");
   }
+
+  return field;
+}
+
+int Level1bOco::number_sample(int Spec_index) const
+{
+  std::string field = radiance_dataset_name(Spec_index);
+  TinyVector<int, 3> rad_shape = hfile->read_shape<3>(field);
+  return rad_shape(2);
+}
+
+SpectralRange Level1bOco::radiance_no_uncertainty(int Spec_index) const
+{
+  firstIndex i1; secondIndex i2;
+
+//-----------------------------------------------------------------------
+/// Radiance dataset names hardcoded for now.
+//-----------------------------------------------------------------------
+
+  std::string field = radiance_dataset_name(Spec_index);
 
   // Use start and size to keep from having to read entire radiance
   // array each time, OCO datasets get rather large

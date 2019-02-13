@@ -20,6 +20,7 @@ public:
              const boost::shared_ptr<HdfSoundingId>& Sounding_id);
   Level1bOco(const boost::shared_ptr<HdfFile>& Hfile, 
              const boost::shared_ptr<HdfSoundingId>& Sounding_id);
+  virtual int number_sample(int Spec_index) const;
   virtual SpectralRange radiance(int Spec_index) const;
   bool has_spike_eof(int Spec_index) const;
   blitz::Array<double, 1> spike_eof(int Spec_index) const;

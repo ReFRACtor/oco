@@ -19,6 +19,12 @@ public:
 	     const boost::shared_ptr<HdfSoundingId>& Sounding_id);
 
 //-----------------------------------------------------------------------
+/// Number of spectral samples per channel
+//-----------------------------------------------------------------------
+
+  virtual int number_sample(int Spec_index) const;
+
+//----------------------------------------------------------------------ample(int i) const;
 /// The acquisition mode. The data we process will be "Nadir", "Glint"
 /// or "Target". 
 //-----------------------------------------------------------------------
@@ -90,6 +96,7 @@ protected:
 
 private:
   void initialize();
+  std::string radiance_dataset_name(int Spec_index) const;
 };
 }
 
