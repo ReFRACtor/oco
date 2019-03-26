@@ -21,6 +21,8 @@ config_dir = os.path.dirname(__file__)
 static_input_file = os.path.join(config_dir, "static_input.h5")
 
 solar_file = os.path.join(config_dir, "oco_solar_model.h5")
+eof_file = os.path.join(config_dir, "oco_eof.h5")
+
 aerosol_prop_file = os.path.join(os.environ["REFRACTOR_INPUTS"], "l2_aerosol_combined.h5")
 reference_atm_file =  os.path.join(os.environ["REFRACTOR_INPUTS"], "reference_atmosphere.h5")
 covariance_file = os.path.join(config_dir, "retrieval_covariance.h5")
@@ -251,7 +253,43 @@ def common_config_definition(absco_type=AbscoType.Legacy):
             },
             'instrument_correction': {
                 'creator': creator.instrument.InstrumentCorrectionList,
-                'corrections': [],
+                'corrections': ['eof_1', 'eof_2', 'eof_3'],
+                'eof_1': {
+                    'creator': creator.instrument.EmpiricalOrthogonalFunction,
+                    'value': np.array([0, 0, 0], dtype=float),
+                    'order': 1,
+                    'scale_uncertainty': True,
+                    'scale_to_stddev': 1e19,
+                    'eof_file': eof_file,
+                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Glint",
+                },
+                'eof_2': {
+                    'creator': creator.instrument.EmpiricalOrthogonalFunction,
+                    'value': np.array([0, 0, 0], dtype=float),
+                    'order': 2,
+                    'scale_uncertainty': True,
+                    'scale_to_stddev': 1e19,
+                    'eof_file': eof_file,
+                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Glint",
+                },
+                'eof_3': {
+                    'creator': creator.instrument.EmpiricalOrthogonalFunction,
+                    'value': np.array([0, 0, 0], dtype=float),
+                    'order': 3,
+                    'scale_uncertainty': True,
+                    'scale_to_stddev': 1e19,
+                    'eof_file': eof_file,
+                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Glint",
+                },
+                'eof_4': {
+                    'creator': creator.instrument.EmpiricalOrthogonalFunction,
+                    'value': np.array([0, 0, 0], dtype=float),
+                    'order': 4,
+                    'scale_uncertainty': True,
+                    'scale_to_stddev': 1e19,
+                    'eof_file': eof_file,
+                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Glint",
+                },
             },
         },
         'atmosphere': {
@@ -347,7 +385,7 @@ def common_config_definition(absco_type=AbscoType.Legacy):
             'creator': creator.forward_model.ForwardModel,
             'spectrum_effect': {
                 'creator': creator.forward_model.SpectrumEffectList,
-                'effects': ["solar_model","instrument_doppler"],
+                'effects': ["solar_model", "instrument_doppler", "fluorescence_effect"],
                 'solar_model': {
                     'creator': creator.solar_model.SolarAbsorptionAndContinuum,
                     'doppler': {
@@ -369,6 +407,17 @@ def common_config_definition(absco_type=AbscoType.Legacy):
                         'name': 'relative_velocity',
                     },
                 },
+                'fluorescence_effect':{
+                    'creator': creator.forward_model.FluorescenceEffect,
+                    'reference_point': {
+                        'creator': creator.value.ArrayWithUnit,
+                        'value': np.array([0.757]),
+                        'units':'micron',
+                    },
+                    'value': np.array([0.0, 0.0018]),
+                    'cov_unit': rf.Unit("W/cm^2/sr/cm^-1"),
+                    'spec_index': np.array([0]),
+                  },
             },
         },
         'retrieval': {
@@ -437,6 +486,7 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id, **kwargs):
         'creator': creator.base.SaveToCommon,
         'l1b': oco_level1b(l1b_obj, observation_id),
         'met': oco_meteorology(met_file, observation_id),
+        'sounding_number': observation_id.sounding_number,
     }
 
     # Set up scenario values that have the same name as they are named in the L1B
