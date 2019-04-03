@@ -12,6 +12,27 @@ set(OCO_VERSION "1.0.0")
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Conda has a separate set of debug flags defined, which is more than just
+# adding a -g. If we are doing a debug rather than release build, use those
+# flags if we find them.
+set(DEBUG_CXXFLAGS "$ENV{DEBUG_CXXFLAGS}" CACHE STRING "Flags to use in Debug")
+set(DEBUG_CFLAGS "$ENV{DEBUG_CFLAGS}" CACHE STRING "Flags to use in Debug")
+set(DEBUG_FFLAGS "$ENV{DEBUG_FFLAGS}" CACHE STRING "Flags to use in Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+  if(DEBUG_CXXFLAGS)
+    set(CMAKE_CXX_FLAGS "${DEBUG_CXXFLAGS}")
+  endif(DEBUG_CXXFLAGS)
+  if(DEBUG_CFLAGS)
+    set(CMAKE_C_FLAGS "${DEBUG_CFLAGS}")
+  endif(DEBUG_CFLAGS)
+  if(DEBUG_FFLAGS)
+    # Suppress warning about comparing reals. This is often a bad thing
+    # to do, but the fortran code we have does this the "right" way, e.g.
+    # checking for identical to zero as a flag value.
+    set(CMAKE_Fortran_FLAGS "${DEBUG_FFLAGS}  -Wno-compare-reals")
+  endif(DEBUG_FFLAGS)
+endif(CMAKE_BUILD_TYPE STREQUAL "Debug")
+
 # By default install into the build directory
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
     set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "..." FORCE)
@@ -72,6 +93,9 @@ endif(NOT BOOST_ROOT AND DEFINED ENV{CONDA_PREFIX})
 find_package(Boost REQUIRED COMPONENTS system unit_test_framework)
 list(APPEND THIRDPARTY_INCLUDES ${Boost_INCLUDE_DIRS})
 list(APPEND THIRDPARTY_LIBRARIES ${Boost_LIBRARIES})
+
+# When we are using debug mode, turn on the blitz range checking.
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DBZ_DEBUG")
 
 if(POLICY CMP0068)
   cmake_policy(SET CMP0068 NEW)

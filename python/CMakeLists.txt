@@ -21,7 +21,9 @@ include_directories(${PYTHON_INCLUDE_PATH})
 
 # On some systems we need to have the Python LIBRARY included in the list of third party libraries
 # to properly compile oco_test
-list(APPEND THIRDPARTY_LIBRARIES ${PYTHON_LIBRARIES})
+# Don't think we actually want to do this. Leave in place commented out
+# in case this is a wrong guess.
+#list(APPEND THIRDPARTY_LIBRARIES ${PYTHON_LIBRARIES})
 set(THIRDPARTY_LIBRARIES ${THIRDPARTY_LIBRARIES} PARENT_SCOPE)
 
 # Find NumPy
