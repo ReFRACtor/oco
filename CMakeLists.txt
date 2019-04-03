@@ -28,7 +28,7 @@ set(THIRDPARTY_INCLUDES "")
 find_package(Refractor
              REQUIRED COMPONENTS python
              CONFIG
-             HINTS ${REFRACTOR_DIR})
+             HINTS ${REFRACTOR_DIR} ${CONDA_PREFIX})
 list(APPEND THIRDPARTY_INCLUDES ${REFRACTOR_INCLUDE_DIRS})
 list(APPEND THIRDPARTY_LIBRARIES ${REFRACTOR_LIBRARIES})
 list(APPEND THIRDPARTY_LIBRARIES ${REFRACTOR_PYTHON_LIBRARIES})
@@ -36,7 +36,15 @@ list(APPEND THIRDPARTY_LIBRARIES ${REFRACTOR_PYTHON_LIBRARIES})
 # Insert the ReFRACtor cmake modules directory at the beginning of
 # our search path so we can override built in modules with updated
 # copies and to enable the finding of additional packages
-list(INSERT CMAKE_MODULE_PATH 0 "${REFRACTOR_DIR}/cmake/Modules/")
+if(DEFINED REFRACTOR_DIR)
+  list(INSERT CMAKE_MODULE_PATH 0 "${REFRACTOR_DIR}/cmake/Modules/")
+else()
+  # If not otherwise pointed to a different directory, use CONDA_PREFIX
+  # if defined
+  if(DEFINED ENV{CONDA_PREFIX})
+    list(INSERT CMAKE_MODULE_PATH 0 "$ENV{CONDA_PREFIX}/cmake/Modules/")
+  endif(DEFINED ENV{CONDA_PREFIX})
+endif(DEFINED REFRACTOR_DIR)
 
 # Find Blitz++
 find_package(Blitz REQUIRED)
@@ -56,9 +64,34 @@ list(APPEND THIRDPARTY_LIBRARIES ${HDF5_LIBRARIES})
 include_directories(${THIRDPARTY_INCLUDES})
 
 # Find Boost
+# We want to use the Conda version if it is available, and the user hasn't
+# otherwise specified a different version
+if(NOT BOOST_ROOT AND DEFINED ENV{CONDA_PREFIX})
+  set(BOOST_ROOT $ENV{CONDA_PREFIX})
+endif(NOT BOOST_ROOT AND DEFINED ENV{CONDA_PREFIX})
 find_package(Boost REQUIRED COMPONENTS system unit_test_framework)
 list(APPEND THIRDPARTY_INCLUDES ${Boost_INCLUDE_DIRS})
 list(APPEND THIRDPARTY_LIBRARIES ${Boost_LIBRARIES})
+
+if(POLICY CMP0068)
+  cmake_policy(SET CMP0068 NEW)
+endif()
+
+# use, i.e. don't skip the full RPATH for the build tree
+SET(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+SET(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+# For some reason on the Mac we don't automatically figure out that CONDA
+# should be on the rpath. So add that. This seems like a bug, the reading of
+# CMAKE_INSTALL_RPATH_USE_LINK_PATH seems to indicate it should do this 
+# automatically. But it doesn't, so go ahead and set this
+if(DEFINED ENV{CONDA_PREFIX})
+  list(APPEND CMAKE_INSTALL_RPATH "$ENV{CONDA_PREFIX}/lib")
+endif(DEFINED ENV{CONDA_PREFIX})
+
+# add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 include_directories(${THIRDPARTY_INCLUDES})
 

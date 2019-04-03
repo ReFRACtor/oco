@@ -1,9 +1,22 @@
 # Package the the module lives under
 set(PYTHON_PACKAGE_NAME "oco")
 
-# Find Python
-find_package(PythonLibs 3.0 REQUIRED)
+# New policy is to pass SWIG_MODULE_NAME as -module. We don't actually need
+# this, but no reason not to turn it on. Without this, you get a warning
+# message from CMaker version 3.14 and later
+if(POLICY CMP0086)
+  cmake_policy(SET CMP0086 NEW)
+endif()
+if(POLICY CMP0078)
+  cmake_policy(SET CMP0078 OLD)
+endif()
+
+# Find Python. Note for conda on the Mac you need to find the interpreter
+# before the libs (i.e., the order is important). Otherwise this finds
+# the system python for libraries but uses conda for the interpreter, which
+# of course causes problems. This goes away if you do this in the other order.
 find_package(PythonInterp 3.0 REQUIRED)
+find_package(PythonLibs 3.0 REQUIRED)
 include_directories(${PYTHON_INCLUDE_PATH})
 
 # On some systems we need to have the Python LIBRARY included in the list of third party libraries
@@ -53,8 +66,16 @@ foreach(swig_file ${MODULE_INTERFACE_FILES})
     else()
         swig_add_module(${module_name} python ${swig_file})
     endif()
-
-    swig_link_libraries(${module_name} ${PYTHON_LIBRARIES} ${THIRDPARTY_LIBRARIES} oco)
+    if(APPLE)
+      # Compiling with python causes a problem on the Mac using conda.
+      # See https://github.com/pytorch/pytorch/commit/73f6715f4725a0723d8171d3131e09ac7abf0666
+      # The symbols get resolved when loaded into python, so this doesn't cause
+      # a problem.
+      swig_link_libraries(${module_name} ${THIRDPARTY_LIBRARIES} oco)
+      set_target_properties(${SWIG_MODULE_${module_name}_REAL_NAME} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
+    else()
+      swig_link_libraries(${module_name} ${PYTHON_LIBRARIES} ${THIRDPARTY_LIBRARIES} oco)
+    endif(APPLE)
     target_compile_definitions(${SWIG_MODULE_${module_name}_REAL_NAME} PRIVATE SWIG_TYPE_TABLE=refractor)
 
     LIST(APPEND SWIG_LIBS ${SWIG_MODULE_${module_name}_REAL_NAME})
@@ -72,14 +93,20 @@ add_custom_target(python DEPENDS ${SWIG_LIBS})
 file(GLOB INSTALL_INTERFACE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.i)
 install(FILES ${INSTALL_INTERFACE_FILES} DESTINATION include)
 
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import distutils.sysconfig; print(distutils.sysconfig.get_python_lib(True, False, ''))" OUTPUT_VARIABLE PYTHON_INSTALL_DIR OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 # Install python source files from the python/ source directory
-install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/" DESTINATION "python/${PYTHON_PACKAGE_NAME}"
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/" DESTINATION "${PYTHON_INSTALL_DIR}/${PYTHON_PACKAGE_NAME}"
         FILES_MATCHING
         PATTERN "*.py")
 
 # Install SWIG created files
-install(DIRECTORY ${CMAKE_SWIG_OUTDIR} DESTINATION python
+install(DIRECTORY ${CMAKE_SWIG_OUTDIR} DESTINATION ${PYTHON_INSTALL_DIR}
         FILES_MATCHING
         PATTERN "*.${CMAKE_SHARED_LIBRARY_SUFFIX}"
         PATTERN "*.so"
         PATTERN "*.py")
+
+# Expose Python install path to parent scope
+set(PYTHON_INSTALL_DIR ${PYTHON_INSTALL_DIR} PARENT_SCOPE)
+      
