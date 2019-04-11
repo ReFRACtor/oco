@@ -15,6 +15,11 @@ list(APPEND TEST_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/global_fixture_default.cc"
 # Create test executable and link to main library target
 add_executable(oco_test ${TEST_SOURCES})
 target_link_libraries(oco_test oco ${THIRDPARTY_LIBRARIES})
+set_target_properties(oco_test PROPERTIES INSTALL_RPATH "${PROJECT_BINARY_DIR}/lib;${CMAKE_INSTALL_PREFIX}/lib")
+if(DEFINED ENV{CONDA_PREFIX})
+  set_property(TARGET oco_test APPEND PROPERTY INSTALL_RPATH "$ENV{CONDA_PREFIX}/lib")
+endif(DEFINED ENV{CONDA_PREFIX})
+set_target_properties(oco_test PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 
 # Add test to ctest
 add_test(NAME oco COMMAND oco_test --log_level=test_suite)
