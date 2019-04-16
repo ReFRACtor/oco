@@ -415,7 +415,7 @@ def common_config_definition(absco_type=AbscoType.Legacy):
                         'units':'micron',
                     },
                     'value': np.array([0.0, 0.0018]),
-                    'cov_unit': rf.Unit("W/cm^2/sr/cm^-1"),
+                    'cov_unit': rf.Unit("ph / s / m^2 / micron sr^-1"),
                     'spec_index': np.array([0]),
                   },
             },

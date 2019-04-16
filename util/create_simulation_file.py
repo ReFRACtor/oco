@@ -70,7 +70,7 @@ class SimulationWriter(object):
                 max_aer = max(max_aer, atm.aerosol.number_particle)
 
             inst = snd_config.instrument
-            num_channel = inst.number_spectrometer
+            num_channel = inst.number_spectrometer()
             num_samples = inst.ils(0).ils_function.response.shape[0]
             num_ils_values = inst.ils(0).ils_function.response.shape[1]
 
@@ -159,7 +159,7 @@ class SimulationWriter(object):
             # Scenario data from L1B reader
             # Copy per channel L1B values 
             l1b = snd_config.input.l1b
-            for chan_idx in range(l1b.number_spectrometer):
+            for chan_idx in range(l1b.number_spectrometer()):
                 self.time[snd_idx] = l1b.time(chan_idx).pgs_time
                 self.time.units = "Seconds since 1993-01-01"
 
@@ -186,7 +186,7 @@ class SimulationWriter(object):
 
             # ILS
             inst = snd_config.instrument
-            for chan_idx in range(l1b.number_spectrometer):
+            for chan_idx in range(l1b.number_spectrometer()):
                 logger.debug("Copying ils_delta_lambda for channel %d" % (chan_idx + 1))
                 self.ils_delta_lambda[snd_idx, chan_idx, :, :] = inst.ils(chan_idx).ils_function.delta_lambda
 
@@ -226,7 +226,7 @@ class SimulationWriter(object):
 
             # Ground
             logger.debug("Copying ground albedo")
-            for chan_idx in range(l1b.number_spectrometer):
+            for chan_idx in range(l1b.number_spectrometer()):
                 ref_point = atm.ground.reference_point(0)
                 self.albedo[snd_idx, chan_idx, 0] = atm.ground.albedo(ref_point, chan_idx).value
                 self.albedo[snd_idx, chan_idx, 1:] = 0.0
