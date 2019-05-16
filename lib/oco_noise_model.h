@@ -21,7 +21,7 @@ public:
   OcoNoiseModel(const HdfFile& Hfile, 
 		const HdfSoundingId& Sounding_id,
 		const blitz::Array<double, 1>& Max_meas_signal) 
-    : max_ms_(Max_meas_signal)
+    : max_ms_(Max_meas_signal.copy())
   { read_hdf_noise(Hfile, Sounding_id); }
 
   virtual blitz::Array<double, 1> uncertainty(int Spec_index, const blitz::Array<double, 1>& Radiance) const;
