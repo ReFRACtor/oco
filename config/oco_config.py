@@ -229,7 +229,7 @@ def common_config_definition(absco_type=AbscoType.Legacy):
                                  static_spectral_domain("/Spectrum_Sampling/nonuniform_grid_3"), ]
         },
         'instrument': {
-            'creator': creator.instrument.IlsInstrument,
+            'creator': creator.instrument.IlsGratingInstrument,
             'ils_half_width': {
                 'creator': creator.value.ArrayWithUnit,
                 'value': np.array([4.09e-04, 1.08e-03, 1.40e-03]),
