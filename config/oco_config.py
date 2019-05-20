@@ -416,7 +416,7 @@ def common_config_definition(absco_type=AbscoType.Legacy):
                     },
                     'value': np.array([0.0, 0.0018]),
                     'cov_unit': rf.Unit("ph / s / m^2 / micron sr^-1"),
-                    'spec_index': np.array([0]),
+                    'which_channels': np.array([0]),
                   },
             },
         },
