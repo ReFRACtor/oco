@@ -1,3 +1,6 @@
+# Enable ctest
+enable_testing()
+
 set(OCO_TEST_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
 include_directories(${OCO_TEST_DIR} ${OCO_LIB_DIR})
 
@@ -24,5 +27,9 @@ set_target_properties(oco_test PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 # Add test to ctest
 add_test(NAME oco COMMAND oco_test --log_level=test_suite)
 
+
 # Expose test directory location to top level scope
 set(OCO_TEST_DIR ${OCO_TEST_DIR} PARENT_SCOPE)
+
+# Target to run all tests
+add_custom_target(all_test COMMAND ctest DEPENDS oco_test)
