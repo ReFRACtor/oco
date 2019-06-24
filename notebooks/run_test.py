@@ -2,7 +2,7 @@ import pytest
 import os
 import sys
 sys.path.append('..')
-os.environ["ABSCO_PATH"] = "/home/smyth/Local/absco/v5.0.0"
+os.environ["ABSCO_PATH"] = "/Users/smyth/absco/v5.0.0"
 from refractor.factory import process_config
 from refractor import framework as rf
 from config import oco_config
