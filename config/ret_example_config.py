@@ -1,0 +1,18 @@
+import os
+
+from refractor.config import refractor_config
+
+from oco_config import retrieval_config_definition
+
+@refractor_config
+def config(**kwargs):
+    data_dir = os.path.realpath(os.path.join(os.path.dirname(__file__), "../test/in"))
+
+    l1b_file = os.path.join(data_dir, "oco2_L1bScND_16094a_170711_B7302r_171102090317-selected_ids.h5")
+    met_file = os.path.join(data_dir, "oco2_L2MetND_16094a_170711_B8000r_171017214714-selected_ids.h5")
+
+    sounding_id = "2017071110541471"
+
+    config_def = retrieval_config_definition(l1b_file, met_file, sounding_id)
+
+    return config_def
