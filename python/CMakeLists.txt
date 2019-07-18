@@ -19,13 +19,6 @@ find_package(PythonInterp 3.0 REQUIRED)
 find_package(PythonLibs 3.0 REQUIRED)
 include_directories(${PYTHON_INCLUDE_PATH})
 
-# On some systems we need to have the Python LIBRARY included in the list of third party libraries
-# to properly compile oco_test
-# Don't think we actually want to do this. Leave in place commented out
-# in case this is a wrong guess.
-#list(APPEND THIRDPARTY_LIBRARIES ${PYTHON_LIBRARIES})
-set(THIRDPARTY_LIBRARIES ${THIRDPARTY_LIBRARIES} PARENT_SCOPE)
-
 # Find NumPy
 find_package(NumPy REQUIRED)
 include_directories(${NUMPY_INCLUDE_DIRS})
@@ -43,7 +36,14 @@ set(CMAKE_SWIG_OUTDIR ${PACKAGE_OUTDIR})
 include_directories(${THIRDPARTY_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/lib)
 
 # Which interface files should be used for creating modules
-set(MODULE_INTERFACE_FILES "oco.i")
+set(MODULE_INTERFACE_FILES 
+    hdf_sounding_id.i
+    level_1b_hdf.i
+    level_1b_oco.i
+    oco_met_file.i
+    oco_noise_model.i
+    oco_sounding_id.i
+)
 
 # Use C++ mode for SWIG interface files, turn on all warnings
 set_source_files_properties(${MODULE_INTERFACE_FILES} PROPERTIES CPLUSPLUS ON SWIG_FLAGS "-Wall") 

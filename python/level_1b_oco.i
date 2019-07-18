@@ -1,10 +1,13 @@
+%module(directors="1", allprotected="1") level_1b_oco
+%include "fp_common.i"
+
 %{
 #include "level_1b_oco.h"
 %}
 
-%base_import(level_1b_hdf)
+%import(module="oco.level_1b_hdf") "level_1b_hdf.i"
+%import(module="oco.hdf_sounding_id") "hdf_sounding_id.i"
 
-%import "hdf_sounding_id.i"
 %import "hdf_file.i"
 %import "spectral_range.i"
 

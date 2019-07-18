@@ -1,10 +1,14 @@
+%module(directors="1", allprotected="1") level_1b_hdf
+%include "fp_common.i"
+
 %{
 #include "level_1b_hdf.h"
 #include "noise_model.h"
 %}
 
 %base_import(level_1b)
-%import "hdf_sounding_id.i"
+%import(module="oco.hdf_sounding_id") "hdf_sounding_id.i"
+
 %import "hdf_file.i"
 %import "noise_model.i"
 %import "array_with_unit.i"

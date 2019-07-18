@@ -12,7 +12,7 @@ from refractor import framework as rf
 
 from oco import Level1bOco, OcoMetFile, OcoSoundingId, OcoNoiseModel
 
-from .simulation import SimulationFile
+from simulation import SimulationFile
 
 absco_base_path = os.environ['ABSCO_PATH']
 

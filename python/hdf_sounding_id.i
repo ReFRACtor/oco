@@ -1,3 +1,6 @@
+%module(directors="1", allprotected="1") hdf_sounding_id
+%include "fp_common.i"
+
 %{
 #include "hdf_sounding_id.h"
 %}

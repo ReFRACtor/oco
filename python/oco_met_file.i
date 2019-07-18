@@ -1,9 +1,12 @@
+%module(directors="1", allprotected="1") oco_met_file
+%include "fp_common.i"
+
 %{
 #include "oco_met_file.h"
 %}
 
 %base_import(meteorology);
-%import "hdf_sounding_id.i"
+%import(module="oco.hdf_sounding_id") "hdf_sounding_id.i"
 
 %fp_shared_ptr(FullPhysics::OcoMetFile);
 
