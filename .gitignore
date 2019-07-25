@@ -4,10 +4,16 @@ autom4te.cache
 # Ignore compiled python file
 *.pyc
 
+# Ignore a python enviroment
+env/
+
 # Various files written by emacs
 *~
 \#*#
 .#*
+
+# Ignore Jupyter temporaries
+.ipynb_checkpoints/
 
 # Mac Finder puts these into directories
 .DS_Store
@@ -15,3 +21,11 @@ autom4te.cache
 # Vim swap files
 *.swp
 .tramp_history
+
+# CMake generated test/cris_level_1b_test.h from test/cris_level_1b_test.h.in
+test/cris_level_1b_test.h
+# CMake generated test/cris_nasa_level_1b_test.h from test/cris_nasa_level_1b_test.h.in
+test/cris_nasa_level_1b_test.h
+
+# py.test cache directories
+.cache/
