@@ -77,7 +77,6 @@ find_package(Refractor
              HINTS ${REFRACTOR_DIR} ${CONDA_PREFIX})
 list(APPEND THIRDPARTY_INCLUDES ${REFRACTOR_INCLUDE_DIRS})
 list(APPEND THIRDPARTY_LIBRARIES ${REFRACTOR_LIBRARIES})
-list(APPEND THIRDPARTY_LIBRARIES ${REFRACTOR_PYTHON_LIBRARIES})
 
 # Insert the ReFRACtor cmake modules directory at the beginning of
 # our search path so we can override built in modules with updated
