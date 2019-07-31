@@ -20,7 +20,6 @@ def simulation_config_definition(sim_file, sim_index, **kwargs):
     for val_name in config_def['scenario'].keys():
         if val_name != "creator":
             config_def['scenario'][val_name] = getattr(sim_data.scenario, val_name)
-            print(val_name, getattr(sim_data.scenario, val_name))
 
     config_def['scenario']['sounding_number'] = int(str(sim_data.scenario.observation_id[...])[-1])
 
@@ -29,6 +28,10 @@ def simulation_config_definition(sim_file, sim_index, **kwargs):
     config_def['instrument']['ils_function']['response'] = sim_data.instrument.ils_response
 
     # Empirical Orthogonal Functions
+    rad_uncert = []
+    for chan_idx in range(sim_data.instrument.radiance_uncertainty.rows):
+        rad_uncert.append(sim_data.instrument.radiance_uncertainty[chan_idx, :])
+
     ic_config = config_def['instrument']['instrument_correction']
     for ic_name in ic_config['corrections']:
         if re.search('eof_', ic_name):
@@ -36,7 +39,7 @@ def simulation_config_definition(sim_file, sim_index, **kwargs):
             ic_config[ic_name]['value'] = getattr(sim_data.instrument, ic_name)
 
             # Set uncertainty
-            ic_config[ic_name]['uncertainty'] = sim_data.instrument.radiance_uncertainty
+            ic_config[ic_name]['uncertainty'] = rad_uncert
 
     # Atmosphere
     config_def['atmosphere']['pressure'] = {
@@ -82,6 +85,11 @@ def simulation_config_definition(sim_file, sim_index, **kwargs):
 
     # Ground lambertian
     config_def['atmosphere']['ground']['lambertian']['value'] = sim_data.ground.lambertian_albedo
+
+    # Fluorescence
+    spec_eff_config = config_def['forward_model']['spectrum_effect']
+    if 'fluorescence_effect' in spec_eff_config:
+        spec_eff_config['fluorescence_effect']['value'] = sim_data.atmosphere.fluorescence[:]
 
     # Require only the state vector to be set up, this gives us jacobians 
     # without worrying about satisfying solver requirements
