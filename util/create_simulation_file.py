@@ -100,6 +100,9 @@ class SimulationWriter(object):
         # Number of aerosol parameters
         self.aer_param_dim = output_file.createDimension('n_aerosol_parameters', 3)
 
+        # Number of fluorescence parameters
+        self.fluor_param_dim = output_file.createDimension('n_fluorescence_parameters', 2)
+
     def _create_datasets(self, output_file):
 
         logger.debug("Creating file datasets")
@@ -155,6 +158,9 @@ class SimulationWriter(object):
         self.ground_group = self.atmosphere_group.createGroup('Ground')
         self.albedo = self.ground_group.createVariable('lambertian_albedo', float, (self.snd_id_dim.name, self.channel_dim.name, self.albedo_poly_dim.name))
 
+        # Fluorescence
+        self.fluorescence = self.atmosphere_group.createVariable('fluorescence', float, (self.snd_id_dim.name, self.fluor_param_dim.name))
+
     def _fill_datasets(self, output_file):
 
         logger.debug("Filling datasets with values from configuration")
@@ -202,6 +208,7 @@ class SimulationWriter(object):
                 self.ils_response[snd_idx, chan_idx, :, :] = inst.ils(chan_idx).ils_function.response
 
             # Radiance uncertainty
+            logger.debug("Copying radiance uncertainty")
             for chan_idx in range(l1b.number_spectrometer()):
                 self.rad_uncertainty[snd_idx, chan_idx, :] = l1b.radiance(chan_idx).uncertainty
                 self.rad_uncertainty.units = l1b.radiance(chan_idx).units.name
@@ -211,6 +218,7 @@ class SimulationWriter(object):
             for ic_name in ic_config['corrections']:
                 if re.search('eof_', ic_name):
                     # Set eof_scaling
+                    logger.debug("Copying {} parameters".format(ic_name))
                     self.eofs[ic_name][snd_idx, :] = ic_config[ic_name]['value'][:]
 
             # Atmosphere
@@ -250,6 +258,12 @@ class SimulationWriter(object):
                 ref_point = atm.ground.reference_point(0)
                 self.albedo[snd_idx, chan_idx, 0] = atm.ground.albedo(ref_point, chan_idx).value
                 self.albedo[snd_idx, chan_idx, 1:] = 0.0
+
+            # Fluorescence
+            spec_eff_config = snd_config.config_def['forward_model']['spectrum_effect']
+            if 'fluorescence_effect' in spec_eff_config:
+                logger.debug("Copying fluorescence parameters")
+                self.fluorescence[snd_idx, :] = spec_eff_config['fluorescence_effect']['value']
 
     def save(self, output_file):
 
