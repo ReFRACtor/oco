@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import re
 import sys
 import logging
 from collections import OrderedDict
@@ -120,10 +121,17 @@ class SimulationWriter(object):
         self.spectral_coefficient = self.scenario_group.createVariable('spectral_coefficient', float, (self.snd_id_dim.name, self.channel_dim.name, self.spec_coeff_dim.name))
         self.stokes_coefficient = self.scenario_group.createVariable('stokes_coefficient', float, (self.snd_id_dim.name, self.channel_dim.name, self.stokes_coeff_dim.name))
         
-        # ILS
+        # Instrument
         self.instrument_group = output_file.createGroup('Instrument')
         self.ils_delta_lambda = self.instrument_group.createVariable('ils_delta_lambda', float, (self.snd_id_dim.name, self.channel_dim.name, self.samp_dim.name, self.ils_dim.name))
         self.ils_response = self.instrument_group.createVariable('ils_response', float, (self.snd_id_dim.name, self.channel_dim.name, self.samp_dim.name, self.ils_dim.name))
+        self.rad_uncertainty = self.instrument_group.createVariable('radiance_uncertainty', float, (self.snd_id_dim.name, self.channel_dim.name, self.samp_dim.name))
+
+        self.eofs = {}
+        for eof_idx in range(1,4):
+            eof_name = 'eof_{}'.format(eof_idx)
+            eof_order = self.instrument_group.createVariable(eof_name, float, (self.snd_id_dim.name, self.channel_dim.name))
+            self.eofs[eof_name] = eof_order
 
         # Atmosphere
         self.atmosphere_group = output_file.createGroup('Atmosphere')
@@ -192,6 +200,18 @@ class SimulationWriter(object):
 
                 logger.debug("Copying ils_response for channel %d" % (chan_idx + 1))
                 self.ils_response[snd_idx, chan_idx, :, :] = inst.ils(chan_idx).ils_function.response
+
+            # Radiance uncertainty
+            for chan_idx in range(l1b.number_spectrometer()):
+                self.rad_uncertainty[snd_idx, chan_idx, :] = l1b.radiance(chan_idx).uncertainty
+                self.rad_uncertainty.units = l1b.radiance(chan_idx).units.name
+
+            # EOF
+            ic_config = snd_config.config_def['instrument']['instrument_correction']
+            for ic_name in ic_config['corrections']:
+                if re.search('eof_', ic_name):
+                    # Set eof_scaling
+                    self.eofs[ic_name][snd_idx, :] = ic_config[ic_name]['value'][:]
 
             # Atmosphere
             logger.debug("Copying pressure")

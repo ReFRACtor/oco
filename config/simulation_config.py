@@ -28,6 +28,16 @@ def simulation_config_definition(sim_file, sim_index, **kwargs):
     config_def['instrument']['ils_function']['delta_lambda'] = sim_data.instrument.ils_delta_lambda
     config_def['instrument']['ils_function']['response'] = sim_data.instrument.ils_response
 
+    # Empirical Orthogonal Functions
+    ic_config = config_def['instrument']['instrument_correction']
+    for ic_name in ic_config['corrections']:
+        if re.search('eof_', ic_name):
+            # Set EOF scaling term
+            ic_config[ic_name]['value'] = getattr(sim_data.instrument, ic_name)
+
+            # Set uncertainty
+            ic_config[ic_name]['uncertainty'] = sim_data.instrument.radiance_uncertainty
+
     # Atmosphere
     config_def['atmosphere']['pressure'] = {
         'creator': creator.atmosphere.PressureGrid,
@@ -73,12 +83,6 @@ def simulation_config_definition(sim_file, sim_index, **kwargs):
     # Ground lambertian
     config_def['atmosphere']['ground']['lambertian']['value'] = sim_data.ground.lambertian_albedo
 
-    # Modify EOFs to not scale by the uncertainty since this requires uncertainty from the L1B file if enabled
-    ic_config = config_def['instrument']['instrument_correction']
-    for ic_name in ic_config['corrections']:
-        if re.search('eof_', ic_name):
-            ic_config[ic_name]['scale_uncertainty'] = False
- 
     # Require only the state vector to be set up, this gives us jacobians 
     # without worrying about satisfying solver requirements
     config_def['retrieval']['creator'] = creator.retrieval.RetrievalBaseCreator
