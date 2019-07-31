@@ -1,18 +1,12 @@
 import os
 import h5py
-import logging
 from enum import Enum
 
 import numpy as np
 
 import refractor.factory.creator as creator
 import refractor.factory.param as param
-from refractor.factory import process_config
 from refractor import framework as rf
-
-from oco import Level1bOco, OcoMetFile, OcoSoundingId, OcoNoiseModel
-
-from simulation import SimulationFile
 
 absco_base_path = os.environ['ABSCO_PATH']
 
@@ -43,40 +37,8 @@ def static_units(dataset):
 def static_spectral_domain(dataset):
     return rf.SpectralDomain(static_value(dataset), rf.Unit(static_units(dataset)))
 
-def oco_level1b(hdf_obj, observation_id):
-    max_ms = np.array([ 7.00e20, 2.45e20, 1.25e20 ])
-
-    l1b = Level1bOco(hdf_obj, observation_id)
-
-    noise = OcoNoiseModel(hdf_obj, observation_id, max_ms)
-    l1b.noise_model = noise
-
-    return l1b
-
-def oco_meteorology(met_file, observation_id):
-    return OcoMetFile(met_file, observation_id)
-
-def oco_bad_sample_mask(hdf_obj, observation_id):
-    sounding_idx = observation_id.sounding_number 
-
-    # Try to get bad sample list from a dedicated dataset
-    if hdf_obj.has_object("/InstrumentHeader/bad_sample_list"):
-        return hdf_obj.read_double_3d("/InstrumentHeader/bad_sample_list")[:, sounding_idx, :]
-    else:
-        # Else try and get bad sample list from snr_coef dataset for older versions of the OCO-2 product
-        return hdf_obj.read_double_4d("/InstrumentHeader/snr_coef")[:, sounding_idx, :, 2]
-
-# Return ILS information for the observation sounding position
-def ils_delta_lambda(hdf_obj, observation_id):
-    sounding_idx = observation_id.sounding_number 
-    return hdf_obj.read_double_4d("/InstrumentHeader/ils_delta_lambda")[:, sounding_idx, :, :]
-
-def ils_response(hdf_obj, observation_id):
-    sounding_idx = observation_id.sounding_number 
-    return hdf_obj.read_double_4d("/InstrumentHeader/ils_relative_response")[:, sounding_idx, :, :]
-
 # Common configuration defintion shared amonst retrieval and simulation types of configuration
-def common_config_definition(absco_type=AbscoType.Legacy):
+def base_config_definition(absco_type=AbscoType.Legacy):
 
     absorber_legacy = {
         'creator': creator.absorber.AbsorberAbsco,
@@ -204,7 +166,6 @@ def common_config_definition(absco_type=AbscoType.Legacy):
             'latitude': None,
             'longitude': None,
             'surface_height': None,
-            'solar_distance': None,
             'solar_zenith': None,
             'solar_azimuth': None,
             'observation_zenith': None,
@@ -444,7 +405,7 @@ def common_config_definition(absco_type=AbscoType.Legacy):
                     'filename': covariance_file,
                 }
             },
-            'solver': {
+            'solver_new': {
                 'creator': creator.retrieval.NLLSSolverLM,
                 'max_iteration': 5,
             },
@@ -455,7 +416,7 @@ def common_config_definition(absco_type=AbscoType.Legacy):
                 'dx_tol_rel': 1e-5, 
                 'g_tol_abs': 1e-5,
             },
-            'solver_connor': {
+            'solver': {
                 'creator': creator.retrieval.ConnorSolverMAP,
                 'max_cost_function_calls': 14,
                 'threshold': 2.0,
@@ -475,143 +436,3 @@ def common_config_definition(absco_type=AbscoType.Legacy):
         raise param.ParamError("Invalid absco type: {}".format(absco_type))
 
     return config_def
-
-def retrieval_config_definition(l1b_file, met_file, sounding_id, **kwargs):
-    l1b_obj = rf.HdfFile(l1b_file)
-    observation_id = OcoSoundingId(l1b_obj, sounding_id)
-
-    config_def = common_config_definition(**kwargs)
-
-    config_def['input'] = {
-        'creator': creator.base.SaveToCommon,
-        'l1b': oco_level1b(l1b_obj, observation_id),
-        'met': oco_meteorology(met_file, observation_id),
-        'sounding_number': observation_id.sounding_number,
-    }
-
-    # Set up scenario values that have the same name as they are named in the L1B
-    l1b_value_names = ['time', 'latitude', 'longitude', 'solar_zenith', 'solar_azimuth', 
-        "relative_velocity", "spectral_coefficient", "stokes_coefficient"] 
-    values_from_l1b = { n:n for n in l1b_value_names }
-
-    # Set up scenario values with different names
-    values_from_l1b.update({
-        "surface_height": "altitude", 
-        "observation_zenith": "sounding_zenith"
-    })
-
-    for config_name, l1b_name in values_from_l1b.items():
-        config_def['scenario'][config_name] = {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': l1b_name,
-        }
-    
-    # Set up scenario values with creators
-    config_def['scenario']['solar_distance'] = {
-        'creator': creator.l1b.SolarDistanceFromL1b,
-    }
-
-    config_def['scenario']['observation_azimuth'] = {
-        'creator': creator.l1b.RelativeAzimuthFromLevel1b,
-    }
-
-    config_def['spec_win']['bad_sample_mask'] = oco_bad_sample_mask(l1b_obj, observation_id)
-
-    # Instrument values
-    config_def['instrument']['ils_function']['delta_lambda'] = ils_delta_lambda(l1b_obj, observation_id)
-    config_def['instrument']['ils_function']['response'] = ils_response(l1b_obj, observation_id)
-
-    # Ground albedo from radiance continuum level
-    config_def['atmosphere']['ground']['lambertian']['value'] = {
-        'creator': creator.ground.AlbedoFromSignalLevel,
-        'signal_level': {
-            'creator': creator.l1b.ValueFromLevel1b,
-            'field': "signal",
-        },
-        'solar_strength': np.array([4.87e21, 2.096e21, 1.15e21]),
-    } 
- 
-    return config_def
-
-def simulation_config_definition(sim_file, sim_index, **kwargs):
-
-    config_def = common_config_definition(**kwargs)
-
-    # Load simulation file
-    sim_data = SimulationFile(sim_file, sim_index)
-
-    # Load scenario values
-    for val_name in config_def['scenario'].keys():
-        if val_name != "creator":
-            config_def['scenario'][val_name] = getattr(sim_data.scenario, val_name)
-
-    # Instrument values
-    config_def['instrument']['ils_function']['delta_lambda'] = sim_data.instrument.ils_delta_lambda
-    config_def['instrument']['ils_function']['response'] = sim_data.instrument.ils_response
-
-    # Atmosphere
-    config_def['atmosphere']['pressure'] = {
-        'creator': creator.atmosphere.PressureGrid,
-        'pressure_levels': sim_data.atmosphere.pressure_levels,
-        'value': sim_data.atmosphere.surface_pressure,
-    }
-
-    config_def['atmosphere']['temperature'] = {
-        'creator': creator.atmosphere.TemperatureLevelOffset,
-        'temperature_levels': sim_data.atmosphere.temperature,
-        'value': np.array([0.0]),
-    }
-
-    # Absorber values
-    config_def['atmosphere']['gases'] = sim_data.absorber.molecule_names
-
-    for name in sim_data.absorber.molecule_names:
-        config_def['atmosphere']['absorber'][name]["vmr"] = {
-            'creator': creator.absorber.AbsorberVmrLevel,
-            'value': sim_data.absorber.vmr(name),
-        }
-
-    # Aerosol values, reset to start with an empty aerosol configuration
-    config_def['atmosphere']['aerosol'] = {
-        'creator': creator.aerosol.AerosolOptical,
-        'aerosols': sim_data.aerosol.particle_names,
-    }
-
-    for name in sim_data.aerosol.particle_names:
-        config_def['atmosphere']['aerosol'][name] = {
-            'creator': creator.aerosol.AerosolDefinition,
-            'extinction': {
-                'creator': creator.aerosol.AerosolShapeGaussian,
-                'value': sim_data.aerosol.gaussian_param(name),
-            },
-            'properties': {
-                'creator': creator.aerosol.AerosolPropertyHdf,
-                'filename': aerosol_prop_file,
-                'prop_name': sim_data.aerosol.property_name(name),
-            },
-        }
-
-    # Ground lambertian
-    config_def['atmosphere']['ground']['lambertian']['value'] = sim_data.ground.lambertian_albedo
- 
-    # Require only the state vector to be set up, this gives us jacobians 
-    # without worrying about satisfying solver requirements
-    config_def['retrieval']['creator'] = creator.retrieval.RetrievalBaseCreator
-
-
-    return config_def
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-
-    data_dir = os.path.realpath(os.path.join(config_dir, '../test/in'))
-    l1b_file = os.path.join(data_dir, "oco2_L1bScND_16094a_170711_B7302r_171102090317-selected_ids.h5")
-    met_file = os.path.join(data_dir, "oco2_L2MetND_16094a_170711_B8000r_171017214714-selected_ids.h5")
-
-    sounding_id = "2017071110541471"
-
-    config_def = retrieval_config_definition(l1b_file, met_file, sounding_id)
-    config_inst = process_config(config_def)
-
-    from pprint import pprint
-    pprint(config_inst, indent=4)

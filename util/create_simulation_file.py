@@ -9,7 +9,7 @@ import netCDF4
 import numpy as np
 
 # Find where the code repository is located relative to this file
-oco_repo_path = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
+oco_repo_path = os.path.realpath(os.path.join(os.path.dirname(__file__), "../config"))
 
 # Add the path to the configuration so it can be imported
 sys.path.append(os.path.join(oco_repo_path))
@@ -19,7 +19,7 @@ from refractor.factory import process_config
 from refractor import framework as rf
 
 # Import configuration module
-from config import oco_config
+from retrieval_config import retrieval_config_definition
 
 logger = logging.getLogger()
 
@@ -40,7 +40,7 @@ class SimulationWriter(object):
 
         logging.debug("Loading configuration for sounding: %s" % sounding_id)
 
-        config_def = oco_config.retrieval_config_definition(self.l1b_file, self.met_file, sounding_id)
+        config_def = retrieval_config_definition(self.l1b_file, self.met_file, sounding_id)
         config_inst = process_config(config_def)
         config_inst.config_def = config_def
 
@@ -70,7 +70,7 @@ class SimulationWriter(object):
                 max_aer = max(max_aer, atm.aerosol.number_particle)
 
             inst = snd_config.instrument
-            num_channel = inst.number_spectrometer()
+            num_channel = inst.number_spectrometer
             num_samples = inst.ils(0).ils_function.response.shape[0]
             num_ils_values = inst.ils(0).ils_function.response.shape[1]
 
