@@ -62,8 +62,8 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id, **kwargs):
     config_def['instrument']['ils_function']['delta_lambda'] = ils_delta_lambda(l1b_obj, observation_id)
     config_def['instrument']['ils_function']['response'] = ils_response(l1b_obj, observation_id)
 
-    # Ground albedo from radiance continuum level
-    config_def['atmosphere']['ground']['lambertian']['value'] = {
+    # Reuse creator set up for determining albedo from the continuum level
+    albedo_cont_level = {
         'creator': creator.ground.AlbedoFromSignalLevel,
         'signal_level': {
             'creator': creator.l1b.ValueFromLevel1b,
@@ -72,5 +72,17 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id, **kwargs):
         'solar_strength': np.array([4.87e21, 2.096e21, 1.15e21]),
         'solar_distance': { 'creator': creator.l1b.SolarDistanceFromL1b },
     } 
+
+    # Lambertian value is directly the albedo level from the continuum
+    config_def['atmosphere']['ground']['lambertian']['value'] = albedo_cont_level
+
+    # BRDF values is a modification of albedo level based on computed BRDF weight
+    orig_brdf_params = config_def['atmosphere']['ground']['brdf']['value']
+    config_def['atmosphere']['ground']['brdf']['value'] = {
+        'creator': creator.ground.BrdfWeightFromContinuum,
+        'continuum_albedo': albedo_cont_level,
+        'brdf_parameters': orig_brdf_params,
+        'brdf_type': config_def['atmosphere']['ground']['brdf']['brdf_type'],
+    }
  
     return config_def

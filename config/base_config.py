@@ -21,6 +21,10 @@ aerosol_prop_file = os.path.join(os.environ["REFRACTOR_INPUTS"], "l2_aerosol_com
 reference_atm_file =  os.path.join(os.environ["REFRACTOR_INPUTS"], "reference_atmosphere.h5")
 covariance_file = os.path.join(config_dir, "retrieval_covariance.h5")
 
+# OCO has 3 channels (bands)
+# O2A, WCO2, SCO2
+num_channels = 3
+
 class AbscoType(Enum):
     Legacy = 1
     AER = 2
@@ -151,7 +155,7 @@ def base_config_definition(absco_type=AbscoType.Legacy):
                 'value': static_value("Common/band_reference_point"),
                 'units': static_units("Common/band_reference_point"),
             },
-            'num_channels': 3,
+            'num_channels': num_channels,
             'absco_base_path': absco_base_path,
             'constants': {
                 'creator': creator.common.DefaultConstants,
@@ -335,8 +339,12 @@ def base_config_definition(absco_type=AbscoType.Legacy):
                 'child': 'lambertian',
                 'lambertian': {
                     'creator': creator.ground.GroundLambertian,
-                    # Filled in by derived creator
-                    'value': None,
+                    'value': np.full((num_channels, 1), 1.0),
+                },
+                'brdf': {
+                    'creator': creator.ground.GroundBrdf,
+                    'value': static_value("/Ground/Brdf/a_priori"),
+                    'brdf_type': creator.ground.BrdfTypeOption.soil,
                 },
             },
         },
