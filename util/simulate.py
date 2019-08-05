@@ -7,8 +7,44 @@ import logging
 import netCDF4
 
 from refractor.executor import StrategyExecutor
+from refractor.output.base import OutputBase
 
 logger = logging.getLogger(__name__)
+
+class ObservationIdOutput(OutputBase):
+
+    def __init__(self, output, step_index, observation_id):
+        base_group_name = self.iter_step_group_name(step_index)
+
+        obs_group = output.createGroup(base_group_name)
+    
+        obs_id = obs_group.createVariable("observation_id", int)
+
+        logger.debug("Simulating for observation id: {}".format(observation_id))
+        obs_id[...] = observation_id
+
+class SimulationExecutor(StrategyExecutor):
+
+    config_filename = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "config/simulation_config.py"))
+
+    def __init__(self, simulation_file, observation_indexes, output_filename=None):
+        
+        strategy_list = []
+        for idx in observation_indexes:
+            strategy_list.append( { "sim_file": simulation_file, "sim_index": idx } )
+
+        super().__init__(self.config_filename, output_filename, strategy_list=strategy_list)
+
+        with netCDF4.Dataset(simulation_file) as sim_contents:
+            self.all_obs_ids = sim_contents['/Scenario/observation_id'][:]
+
+        self.obs_indexes = observation_indexes
+
+    def attach_output(self, config_inst, step_index=0):
+        super().attach_output(config_inst, step_index)
+
+        obs_id = self.all_obs_ids[self.obs_indexes[step_index]]
+        obs_id_out = ObservationIdOutput(self.output, step_index, obs_id)
 
 def main():
     from argparse import ArgumentParser
@@ -43,14 +79,8 @@ def main():
                     indexes.append(sim_index)
             else:
                 indexes.append(int(arg_idx))
-    
-    config_filename = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "config/simulation_config.py"))
 
-    strategy_list = []
-    for idx in indexes:
-        strategy_list.append( { "sim_file": args.simulation_file, "sim_index": idx } )
-
-    exc = StrategyExecutor(config_filename, output_filename=args.output_file, strategy_list=strategy_list)
+    exc = SimulationExecutor(args.simulation_file, indexes, output_filename=args.output_file)
     
     logger.debug("Simulating %d radiances" % len(indexes))
     exc.execute_simulation()
