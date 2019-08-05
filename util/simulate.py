@@ -27,11 +27,11 @@ class SimulationExecutor(StrategyExecutor):
 
     config_filename = os.path.realpath(os.path.join(os.path.dirname(__file__), "..", "config/simulation_config.py"))
 
-    def __init__(self, simulation_file, observation_indexes, output_filename=None):
+    def __init__(self, simulation_file, observation_indexes, channel_index=None, output_filename=None):
         
         strategy_list = []
         for idx in observation_indexes:
-            strategy_list.append( { "sim_file": simulation_file, "sim_index": idx } )
+            strategy_list.append( { "sim_file": simulation_file, "sim_index": idx, "channel_index": channel_index } )
 
         super().__init__(self.config_filename, output_filename, strategy_list=strategy_list)
 
@@ -57,8 +57,11 @@ def main():
     parser.add_argument("output_file", 
         help="Output h5 filename")
 
-    parser.add_argument("-i", "--index", metavar="INT", action="append",
-        help="Index or range of indexes to model, default is all indexes in the simulation file")
+    parser.add_argument("-i", "--observation_index", metavar="INT", action="append",
+        help="Index or range of indexes to simulate, default is all indexes in the simulation file")
+
+    parser.add_argument("-c", "--channel_index", metavar="INT", type=int,
+        help="Index of channel (band) to simulate instead of all")
 
     parser.add_argument("-v", "--verbose", action="store_true",
         help="Turn on verbose logging")
@@ -67,22 +70,22 @@ def main():
 
     logging.basicConfig(level=args.verbose and logging.DEBUG or logging.INFO, format="%(message)s", stream=sys.stdout)
 
-    indexes = []
-    if args.index is None:
+    obs_indexes = []
+    if args.observation_index is None:
         with netCDF4.Dataset(args.simulation_file) as sim_file:
-            indexes = range(sim_file.dimensions['n_sounding'].size)
+            obs_indexes = range(sim_file.dimensions['n_sounding'].size)
     else:
-        for arg_idx in args.index:
+        for arg_idx in args.observation_index:
             if "-" in arg_idx:
                 beg, end = re.split("\s*-\s*", arg_idx)
                 for sim_index in range(int(beg), int(end)+1):
-                    indexes.append(sim_index)
+                    obs_indexes.append(sim_index)
             else:
-                indexes.append(int(arg_idx))
+                obs_indexes.append(int(arg_idx))
 
-    exc = SimulationExecutor(args.simulation_file, indexes, output_filename=args.output_file)
+    exc = SimulationExecutor(args.simulation_file, obs_indexes, args.channel_index, output_filename=args.output_file)
     
-    logger.debug("Simulating %d radiances" % len(indexes))
+    logger.debug("Simulating %d radiances" % len(obs_indexes))
     exc.execute_simulation()
 
 if __name__ == "__main__":
