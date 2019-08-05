@@ -4,6 +4,7 @@ import os
 import re
 import sys
 import logging
+from enum import Enum
 from collections import OrderedDict
 
 import netCDF4
@@ -24,9 +25,15 @@ from retrieval_config import retrieval_config_definition
 
 logger = logging.getLogger()
 
+class GroundType(Enum):
+    lambertian = "lambertian"
+    coxmunk = "coxmunk"
+    coxmunk_plus_lambertian = "coxmunk_plus_lambertian"
+    brdf = "brdf"
+
 class SimulationWriter(object): 
 
-    def __init__(self, l1b_file, met_file, sounding_id_list, max_name_len=25, albedo_degree=4):
+    def __init__(self, l1b_file, met_file, sounding_id_list, max_name_len=25, albedo_degree=4, ground_type=GroundType.lambertian):
         
         logging.debug("Creating simulation file using L1B: %s, Met: %s" % (l1b_file, met_file))
 
@@ -37,11 +44,17 @@ class SimulationWriter(object):
         self.max_name_len = 80
         self.albedo_degree = albedo_degree
 
+        logger.debug("Using ground type: {}".format(ground_type))
+        self.ground_type = GroundType(ground_type)
+
     def config(self, sounding_id):
 
         logging.debug("Loading configuration for sounding: %s" % sounding_id)
 
         config_def = retrieval_config_definition(self.l1b_file, self.met_file, sounding_id)
+
+        config_def['atmosphere']['ground']['child'] = self.ground_type.value
+
         config_inst = process_config(config_def)
         config_inst.config_def = config_def
 
@@ -95,7 +108,12 @@ class SimulationWriter(object):
         # Length of names of gas and aerosols
         self.name_len = output_file.createDimension('name_length', self.max_name_len)
 
-        self.albedo_poly_dim = output_file.createDimension('n_albedo_poly', self.albedo_degree + 1)
+        # Ground dimensions conditional on the ground type used
+        if self.ground_type == GroundType.lambertian:
+            self.albedo_poly_dim = output_file.createDimension('n_albedo_poly', self.albedo_degree + 1)
+        elif self.ground_type == GroundType.brdf:
+            # Weight offset, slope + 5 BRDF kernel params
+            self.brdf_params_dim = output_file.createDimension('n_brdf_params', 7)
 
         # Number of aerosol parameters
         self.aer_param_dim = output_file.createDimension('n_aerosol_parameters', 3)
@@ -156,7 +174,10 @@ class SimulationWriter(object):
 
         # Ground
         self.ground_group = self.atmosphere_group.createGroup('Ground')
-        self.albedo = self.ground_group.createVariable('lambertian_albedo', float, (self.snd_id_dim.name, self.channel_dim.name, self.albedo_poly_dim.name))
+        if self.ground_type == GroundType.lambertian:
+            self.albedo = self.ground_group.createVariable('lambertian_albedo', float, (self.snd_id_dim.name, self.channel_dim.name, self.albedo_poly_dim.name))
+        elif self.ground_type == GroundType.brdf:
+            self.brdf = self.ground_group.createVariable('brdf_parameters', float, (self.snd_id_dim.name, self.channel_dim.name, self.brdf_params_dim.name))
 
         # Fluorescence
         self.fluorescence = self.atmosphere_group.createVariable('fluorescence', float, (self.snd_id_dim.name, self.fluor_param_dim.name))
@@ -253,12 +274,34 @@ class SimulationWriter(object):
                 self.aer_prop_name[snd_idx, aer_index, :] = netCDF4.stringtochar(np.array([prop_name], 'S%d' % self.max_name_len))
 
             # Ground
-            logger.debug("Copying ground albedo")
             for chan_idx in range(l1b.number_spectrometer()):
-                ref_point = atm.ground.reference_point(0)
-                self.albedo[snd_idx, chan_idx, 0] = atm.ground.albedo(ref_point, chan_idx).value
-                self.albedo[snd_idx, chan_idx, 1:] = 0.0
+                if self.ground_type == GroundType.lambertian:
+                    logger.debug("Copying ground albedo parameters, channel {}".format(chan_idx))
+                    ref_point = atm.ground.reference_point(0)
+                    self.albedo[snd_idx, chan_idx, 0] = atm.ground.albedo(ref_point, chan_idx).value
+                    self.albedo[snd_idx, chan_idx, 1:] = 0.0
+                elif self.ground_type == GroundType.brdf:
+                    logger.debug("Copying ground brdf parameters, channel {}".format(chan_idx))
 
+                    self.brdf[snd_idx, chan_idx, 0] = atm.ground.weight_intercept(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, 1] = atm.ground.weight_slope(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, 2] = atm.ground.rahman_factor(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, 3] = atm.ground.hotspot_parameter(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, 4] = atm.ground.asymmetry_parameter(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, 5] = atm.ground.anisotropy_parameter(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, 6] = atm.ground.breon_factor(chan_idx).value
+
+            if self.ground_type == GroundType.lambertian:
+                self.albedo.parameter_names = "0: Albedo offset\n 1: Albedo intercept..."
+            elif self.ground_type == GroundType.brdf:
+                self.brdf.parameter_names = """0: BRDF overall weight intercept
+1: BRDF overall weight slope
+2: Rahman kernel factor
+3: Rahman hotspot parameter
+4: Rahman asymmetry factor
+5: Rahman anisotropy parameter
+6: Breon kernel factor"""
+ 
             # Fluorescence
             spec_eff_config = snd_config.config_def['forward_model']['spectrum_effect']
             if 'fluorescence_effect' in spec_eff_config:
@@ -267,7 +310,7 @@ class SimulationWriter(object):
 
     def save(self, output_file):
 
-        logger.debug("Writing to file: %s" % output_file.filepath)
+        logger.debug("Writing to file: %s" % output_file.filepath())
 
         # Create output file dimension objects
         self._create_dims(output_file)
@@ -295,6 +338,9 @@ def main():
     parser.add_argument("-s", "--sounding_ids_file", metavar="FILE", required=True,
         help="File with list of sounding ids to simulate")
 
+    ground_types = [ v.value for v in list(GroundType) ]
+    parser.add_argument("-g", "--ground_type", choices=ground_types, default=GroundType.lambertian.value)
+
     parser.add_argument("-v", "--verbose", action="store_true",
         help="Turn on verbose logging")
 
@@ -311,7 +357,7 @@ def main():
             for sounding_id_line in sounding_id_file:
                 sounding_id_list.append( sounding_id_line.strip() )
 
-        sim_file = SimulationWriter(args.l1b_file, args.met_file, sounding_id_list)
+        sim_file = SimulationWriter(args.l1b_file, args.met_file, sounding_id_list, ground_type=args.ground_type)
         sim_file.save(output_file)
 
 if __name__ == "__main__":

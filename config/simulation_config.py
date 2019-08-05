@@ -83,8 +83,15 @@ def simulation_config_definition(sim_file, sim_index, **kwargs):
             },
         }
 
-    # Ground lambertian
-    config_def['atmosphere']['ground']['lambertian']['value'] = sim_data.ground.lambertian_albedo
+    # Ground
+    if sim_data.ground.type == "lambertian":
+        config_def['atmosphere']['ground']['child'] = 'lambertian'
+        config_def['atmosphere']['ground']['lambertian']['value'] = sim_data.ground.lambertian_albedo
+    elif sim_data.ground.type == "brdf":
+        config_def['atmosphere']['ground']['child'] = 'brdf'
+        config_def['atmosphere']['ground']['brdf']['value'] = sim_data.ground.brdf_parameters
+    else:
+        raise param.ParamError("Could not determine ground type")
 
     # Fluorescence
     spec_eff_config = config_def['forward_model']['spectrum_effect']
