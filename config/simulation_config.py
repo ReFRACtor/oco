@@ -11,7 +11,7 @@ from base_config import base_config_definition, aerosol_prop_file
 from simulation_file import SimulationFile
 
 @refractor_config
-def simulation_config_definition(sim_file, sim_index, **kwargs):
+def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwargs):
 
     config_def = base_config_definition(**kwargs)
 
@@ -28,6 +28,14 @@ def simulation_config_definition(sim_file, sim_index, **kwargs):
     # Instrument values
     config_def['instrument']['ils_function']['delta_lambda'] = sim_data.instrument.ils_delta_lambda
     config_def['instrument']['ils_function']['response'] = sim_data.instrument.ils_response
+
+    # Channels
+    if channel_index is not None:
+        # Zero out other channels
+        win_ranges = config_def['spec_win']['window_ranges']['value']
+        for c_i in range(win_ranges.shape[0]):
+            if c_i != channel_index:
+                win_ranges[c_i, :, :] = 0
 
     # Empirical Orthogonal Functions
     rad_uncert = []
