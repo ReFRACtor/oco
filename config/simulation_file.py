@@ -121,6 +121,16 @@ class GroundValues(DataGroupValues):
     def __init__(self, file_contents, index):
         super().__init__(file_contents, index, "Atmosphere/Ground")
 
+    @property
+    def type(self):
+
+        if "lambertian_albedo" in self.group_data.variables:
+            return "lambertian"
+        elif "brdf_parameters" in self.group_data.variables:
+            return "brdf"
+        else:
+            raise Exception("Could not determine ground type")
+
 class SimulationFile(object):
 
     def __init__(self, filename, index):
