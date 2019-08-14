@@ -23,7 +23,8 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
         if val_name != "creator":
             config_def['scenario'][val_name] = getattr(sim_data.scenario, val_name)
 
-    config_def['scenario']['sounding_number'] = int(str(sim_data.scenario.observation_id[...])[-1])
+    # OCO-2 sounding ids go from 1-8, this number should be from 0-7
+    config_def['scenario']['sounding_number'] = int(str(sim_data.scenario.observation_id[...])[-1]) - 1
 
     # Instrument values
     config_def['instrument']['ils_function']['delta_lambda'] = sim_data.instrument.ils_delta_lambda
