@@ -141,6 +141,12 @@ endif(DEFINED ENV{CONDA_PREFIX})
 # which point to directories outside the build tree to the install RPATH
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+# Expose options that user should supply
+set(ABSCO_DIR $ENV{abscodir} CACHE PATH "Base path of Absoprtion Coefficient tables are located")
+if(NOT ABSCO_DIR)
+    message(WARNING "ABSCO_DIR option not supplied, tests will fail")
+endif()
+
 include_directories(${THIRDPARTY_INCLUDES})
 
 add_subdirectory(lib)
