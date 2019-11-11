@@ -1,0 +1,7 @@
+#!/bin/bash
+
+source @CMAKE_INSTALL_PREFIX@/setup_oco_env.sh
+export ABSCO_PATH=$abscodir/v5.0.0
+echo "ABSCO_PATH: $ABSCO_PATH"
+run_rf_config.py $*
+

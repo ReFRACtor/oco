@@ -77,7 +77,6 @@ find_package(Refractor
              HINTS ${REFRACTOR_DIR} ${CONDA_PREFIX})
 list(APPEND THIRDPARTY_INCLUDES ${REFRACTOR_INCLUDE_DIRS})
 list(APPEND THIRDPARTY_LIBRARIES ${REFRACTOR_LIBRARIES})
-list(APPEND THIRDPARTY_LIBRARIES ${REFRACTOR_PYTHON_LIBRARIES})
 
 # Insert the ReFRACtor cmake modules directory at the beginning of
 # our search path so we can override built in modules with updated
@@ -141,6 +140,12 @@ endif(DEFINED ENV{CONDA_PREFIX})
 # add the automatically determined parts of the RPATH
 # which point to directories outside the build tree to the install RPATH
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# Expose options that user should supply
+set(ABSCO_DIR $ENV{abscodir} CACHE PATH "Base path of Absoprtion Coefficient tables are located")
+if(NOT ABSCO_DIR)
+    message(WARNING "ABSCO_DIR option not supplied, tests will fail")
+endif()
 
 include_directories(${THIRDPARTY_INCLUDES})
 

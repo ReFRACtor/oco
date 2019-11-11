@@ -13,6 +13,9 @@ configure_file (
     "${CMAKE_CURRENT_BINARY_DIR}/global_fixture_default.cc"
 )
 
+set(RUN_RF_WRAP ${CMAKE_CURRENT_BINARY_DIR}/run_rf_wrap.sh)
+configure_file(run_rf_wrap.sh.in ${RUN_RF_WRAP})
+
 list(APPEND TEST_SOURCES "${CMAKE_CURRENT_BINARY_DIR}/global_fixture_default.cc")
 
 # Create test executable and link to main library target
@@ -27,9 +30,20 @@ set_target_properties(oco_test PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE)
 # Add test to ctest
 add_test(NAME oco COMMAND oco_test --log_level=test_suite)
 
-
 # Expose test directory location to top level scope
 set(OCO_TEST_DIR ${OCO_TEST_DIR} PARENT_SCOPE)
 
+add_custom_target(python_install
+  COMMAND ${CMAKE_COMMAND} --build ${PROJECT_BINARY_DIR} --target install
+  DEPENDS python)
+
+# Retrieval test. We just check that this runs for now
+add_test(NAME run_log_h2o_run_test
+        COMMAND ${RUN_RF_WRAP} -v ${PROJECT_SOURCE_DIR}/config/log_h2o_example_retrieval.py)
+
+add_custom_target(run_log_h2o_test
+        COMMAND ctest --progress --verbose -R run_log_h2o_run_test
+        DEPENDS python_install)
+      
 # Target to run all tests
-add_custom_target(all_test COMMAND ctest DEPENDS oco_test)
+add_custom_target(all_test COMMAND ctest --progress DEPENDS oco_test python_install)

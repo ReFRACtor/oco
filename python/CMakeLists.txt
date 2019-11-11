@@ -73,10 +73,10 @@ foreach(swig_file ${MODULE_INTERFACE_FILES})
       # See https://github.com/pytorch/pytorch/commit/73f6715f4725a0723d8171d3131e09ac7abf0666
       # The symbols get resolved when loaded into python, so this doesn't cause
       # a problem.
-      swig_link_libraries(${module_name} ${THIRDPARTY_LIBRARIES} oco)
+      swig_link_libraries(${module_name} ${THIRDPARTY_LIBRARIES} ${REFRACTOR_PYTHON_LIBRARIES} oco)
       set_target_properties(${SWIG_MODULE_${module_name}_REAL_NAME} PROPERTIES LINK_FLAGS "-undefined dynamic_lookup")
     else()
-      swig_link_libraries(${module_name} ${PYTHON_LIBRARIES} ${THIRDPARTY_LIBRARIES} oco)
+      swig_link_libraries(${module_name} ${PYTHON_LIBRARIES} ${THIRDPARTY_LIBRARIES} ${REFRACTOR_PYTHON_LIBRARIES} oco)
     endif(APPLE)
     target_compile_definitions(${SWIG_MODULE_${module_name}_REAL_NAME} PRIVATE SWIG_TYPE_TABLE=refractor)
 
