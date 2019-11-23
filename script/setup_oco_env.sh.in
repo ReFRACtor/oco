@@ -1,6 +1,7 @@
 oco_install_path=@CMAKE_INSTALL_PREFIX@
 oco_lib_path=$oco_install_path/lib
 export abscodir=@ABSCO_DIR@
+export OCO_CONFIG_DIR=@OCO_CONFIG_DIR@
 
 if [ -n "@REFRACTOR_DIR@" ]; then
     source @REFRACTOR_DIR@/setup_fp_env.sh

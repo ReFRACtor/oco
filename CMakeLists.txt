@@ -152,7 +152,7 @@ include_directories(${THIRDPARTY_INCLUDES})
 add_subdirectory(lib)
 
 add_subdirectory(python)
-
+add_subdirectory(config)
 enable_testing()
 add_subdirectory(test)
 
