@@ -2,7 +2,7 @@ import os
 
 from refractor.config import refractor_config
 
-from retrieval_config import retrieval_config_definition
+from .retrieval_config import retrieval_config_definition
 
 @refractor_config
 def config(**kwargs):

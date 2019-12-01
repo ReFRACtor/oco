@@ -6,9 +6,9 @@ import refractor.factory.creator as creator
 from refractor import framework as rf
 from refractor.config import refractor_config
 
-from base_config import base_config_definition, aerosol_prop_file
+from .base_config import base_config_definition, aerosol_prop_file
 
-from simulation_file import SimulationFile
+from .simulation_file import SimulationFile
 
 @refractor_config
 def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwargs):
