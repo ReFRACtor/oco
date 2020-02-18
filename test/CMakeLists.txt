@@ -44,6 +44,14 @@ add_test(NAME run_log_h2o_run_test
 add_custom_target(run_log_h2o_test
         COMMAND ctest --progress --verbose -R run_log_h2o_run_test
         DEPENDS python_install)
+
+# Compare results to a RtRetrievalFramework (OCO-2 production code) output
+add_test(NAME rtr_comparison
+        COMMAND ${PYTHON_EXECUTABLE} -m pytest ${PROJECT_SOURCE_DIR}/test/python/test_rtr_comparison.py)
+
+add_custom_target(rtr_comparison_test
+        COMMAND ctest --progress --verbose -R rtr_comparison
+        DEPENDS python_install)
       
 # Target to run all tests
 add_custom_target(all_test COMMAND ctest --progress DEPENDS oco_test python_install)
