@@ -5,7 +5,7 @@ from refractor import framework as rf
 
 from oco import Level1bOco, OcoMetFile, OcoSoundingId, OcoNoiseModel
 
-from .base_config import base_config_definition
+from base_config import base_config_definition
 
 def oco_level1b(hdf_obj, observation_id):
     max_ms = np.array([ 7.00e20, 2.45e20, 1.25e20 ])

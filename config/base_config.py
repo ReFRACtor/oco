@@ -399,7 +399,7 @@ def base_config_definition(absco_type=AbscoType.Legacy):
                 'creator': creator.retrieval.SVObserverComponents,
                 'exclude': ['absorber_levels/linear/O2', 'instrument_doppler'],
                 # Match order tradtionally used in old system
-                'order': ['CO2', 'H2O', 'surface_pressure', 'temperature_offset', 'aerosol_shape', 'ground', 'dispersion'],
+                'order': ['CO2', 'H2O', 'surface_pressure', 'temperature_offset', 'aerosol_extinction/gaussian_log', 'ground', 'dispersion'],
             },
             'state_vector': {
                 'creator': creator.retrieval.StateVector,
