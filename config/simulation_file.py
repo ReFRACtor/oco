@@ -34,6 +34,14 @@ class ScenarioValues(DataGroupValues):
         return self.surface_height
 
     @property
+    def relative_azimuth(self):
+        # Define relative azimuth
+        sol_az = self.solar_azimuth.convert("deg").value
+        obs_az = self.observation_azimuth.convert("deg").value
+        rel_az = (180 + obs_az - sol_az) % 360
+        return rf.ArrayWithUnit(rel_az, rf.Unit("deg"))
+
+    @property
     def time(self):
         times = []
         for pgs_time_val in self.group_data['time'][self.index, :]:

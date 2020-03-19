@@ -174,6 +174,7 @@ def base_config_definition(absco_type=AbscoType.Legacy):
             'solar_azimuth': None,
             'observation_zenith': None,
             'observation_azimuth': None,
+            'relative_azimuth': None,
             'relative_velocity': None,
             'spectral_coefficient': None,
             'stokes_coefficient': None,
@@ -280,6 +281,9 @@ def base_config_definition(absco_type=AbscoType.Legacy):
                 'creator': creator.atmosphere.AltitudeHydrostatic,
             },
             'absorber': None, # Determined by switch to config
+            'rayleigh': {
+                'creator': creator.rayleigh.RayleighYoung,
+            },
             'aerosol': {
                 'creator': creator.aerosol.AerosolOptical,
                 'aerosols': [ "kahn_2b", "kahn_3b", "water", "ice" ],
