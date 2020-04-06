@@ -45,9 +45,12 @@ add_custom_target(run_log_h2o_test
         COMMAND ctest --progress --verbose -R run_log_h2o_run_test
         DEPENDS python_install)
 
+set(PYTEST_WRAP ${CMAKE_CURRENT_BINARY_DIR}/pytest_wrap.sh)
+configure_file(pytest_wrap.sh.in ${PYTEST_WRAP})
+      
 # Compare results to a RtRetrievalFramework (OCO-2 production code) output
 add_test(NAME rtr_comparison
-        COMMAND ${PYTHON_EXECUTABLE} -m pytest ${PROJECT_SOURCE_DIR}/test/python/test_rtr_comparison.py)
+        COMMAND ${PYTEST_WRAP} ${PROJECT_SOURCE_DIR}/test/python/test_rtr_comparison.py)
 
 add_custom_target(rtr_comparison_test
         COMMAND ctest --progress --verbose -R rtr_comparison
