@@ -42,7 +42,7 @@ def static_spectral_domain(dataset):
     return rf.SpectralDomain(static_value(dataset), rf.Unit(static_units(dataset)))
 
 # Common configuration defintion shared amonst retrieval and simulation types of configuration
-def base_config_definition(absco_type=AbscoType.Legacy):
+def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
 
     absorber_legacy = {
         'creator': creator.absorber.AbsorberAbsco,

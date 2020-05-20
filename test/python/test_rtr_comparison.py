@@ -63,13 +63,10 @@ def test_clear():
 
     config_filename = os.path.join(config_base_dir, "rtr_comparison_clear.py")
     expt_results_filename = os.path.join(expt_results_dir, "rtr_expected_radiances_clear.h5")
-    #Doesn't currently work
-    #compare_fm(config_filename, expt_results_filename)
+    compare_fm(config_filename, expt_results_filename)
 
 def test_aerosols():
 
     config_filename = os.path.join(config_base_dir, "rtr_comparison_aerosols.py")
     expt_results_filename = os.path.join(expt_results_dir, "rtr_expected_radiances_aerosols.h5")
-
-    #Doesn't currently work
-    #compare_fm(config_filename, expt_results_filename)
+    compare_fm(config_filename, expt_results_filename)
