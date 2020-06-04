@@ -6,7 +6,7 @@
 #include "noise_model.h"
 %}
 
-%base_import(level_1b)
+%base_import(level_1b_sample_coefficient)
 %import(module="oco.hdf_sounding_id") "hdf_sounding_id.i"
 
 %import "hdf_file.i"
@@ -17,7 +17,7 @@
 %fp_shared_ptr(FullPhysics::Level1bHdf);
 
 namespace FullPhysics {
-class Level1bHdf: public Level1b {
+class Level1bHdf: public Level1bSampleCoefficient {
 public:
   virtual ~Level1bHdf();
   virtual DoubleWithUnit latitude(int i) const;
@@ -30,6 +30,7 @@ public:
   virtual DoubleWithUnit altitude(int i) const;
   virtual DoubleWithUnit relative_velocity(int i) const;
   virtual ArrayWithUnit<double, 1> spectral_coefficient(int i) const;
+  virtual blitz::Array<double, 1> spectral_variable(int channel_index) const;
   virtual Time time(int i) const;
   %python_attribute_with_set(noise_model, boost::shared_ptr<FullPhysics::NoiseModel>);
 protected:

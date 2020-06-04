@@ -208,7 +208,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                     'name': 'spectral_coefficient',
                 },
                 'number_samples': static_value("Instrument/Dispersion/number_pixel"),
-                'is_one_based': True,
+                'spectral_variable': creator.l1b.SpectralVariableFromL1b,
                 'num_parameters': 2,
             },
             'ils_function': {
