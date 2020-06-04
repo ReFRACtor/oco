@@ -207,8 +207,14 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                     'creator': creator.value.NamedCommonValue,
                     'name': 'spectral_coefficient',
                 },
-                'number_samples': static_value("Instrument/Dispersion/number_pixel"),
-                'spectral_variable': creator.l1b.SpectralVariableFromL1b,
+                'number_samples': {
+                    'creator': creator.l1b.ValueFromLevel1b,
+                    'field': 'number_sample',
+                 },
+                'spectral_variable': {
+                    'creator': creator.l1b.ValueFromLevel1b,
+                    'field': 'spectral_variable',
+                },
                 'num_parameters': 2,
             },
             'ils_function': {
