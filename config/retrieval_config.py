@@ -25,10 +25,10 @@ def oco_bad_sample_mask(hdf_obj, observation_id):
 
     # Try to get bad sample list from a dedicated dataset
     if hdf_obj.has_object("/InstrumentHeader/bad_sample_list"):
-        return hdf_obj.read_double_3d("/InstrumentHeader/bad_sample_list")[:, sounding_idx, :]
+        return hdf_obj.read_double_3d("/InstrumentHeader/bad_sample_list")[:, sounding_idx, :].astype(bool)
     else:
         # Else try and get bad sample list from snr_coef dataset for older versions of the OCO-2 product
-        return hdf_obj.read_double_4d("/InstrumentHeader/snr_coef")[:, sounding_idx, :, 2]
+        return hdf_obj.read_double_4d("/InstrumentHeader/snr_coef")[:, sounding_idx, :, 2].astype(bool)
 
 # Return ILS information for the observation sounding position
 def ils_delta_lambda(hdf_obj, observation_id):

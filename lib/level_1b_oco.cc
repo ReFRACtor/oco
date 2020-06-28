@@ -371,12 +371,4 @@ blitz::Array<double, 1> Level1bOco::spike_eof(int Spec_index) const
   return dat(0, 0, Range::all());
 }
 
-blitz::Array<double, 1> Level1bOco::spectral_variable
-(int channel_index) const
-{ 
-  blitz::Array<double, 1> var_vals(number_sample(channel_index));
-  blitz::firstIndex i1; 
-  var_vals = i1 + 1;
-  return var_vals;
-}
 

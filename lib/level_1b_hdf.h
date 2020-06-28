@@ -24,57 +24,66 @@ public:
   virtual ~Level1bHdf() {}
   virtual int number_spectrometer() const
   { return altitude_.value.rows();}
-  virtual DoubleWithUnit latitude(int i) const
+  virtual DoubleWithUnit latitude(int channel_index) const
   {
-    range_check(i, 0, number_spectrometer());
-    return latitude_(i);
+    range_check(channel_index, 0, number_spectrometer());
+    return latitude_(channel_index);
   }
-  virtual DoubleWithUnit longitude(int i) const
+  virtual DoubleWithUnit longitude(int channel_index) const
   {
-    range_check(i, 0, number_spectrometer());
-    return longitude_(i);
+    range_check(channel_index, 0, number_spectrometer());
+    return longitude_(channel_index);
   }
-  virtual DoubleWithUnit solar_zenith(int i) const
+  virtual DoubleWithUnit solar_zenith(int channel_index) const
   {
-    range_check(i, 0, number_spectrometer());
-    return solar_zenith_(i);
+    range_check(channel_index, 0, number_spectrometer());
+    return solar_zenith_(channel_index);
   }
-  virtual DoubleWithUnit solar_azimuth(int i) const
+  virtual DoubleWithUnit solar_azimuth(int channel_index) const
   {
-    range_check(i, 0, number_spectrometer());
-    return solar_azimuth_(i);
+    range_check(channel_index, 0, number_spectrometer());
+    return solar_azimuth_(channel_index);
   }
-  virtual DoubleWithUnit altitude(int i) const
+  virtual DoubleWithUnit altitude(int channel_index) const
   {
-    range_check(i, 0, number_spectrometer());
-    return altitude_(i);
+    range_check(channel_index, 0, number_spectrometer());
+    return altitude_(channel_index);
   }
-  virtual DoubleWithUnit sounding_zenith(int i) const
+  virtual DoubleWithUnit sounding_zenith(int channel_index) const
   {
-    range_check(i, 0, number_spectrometer());
-    return sounding_zenith_(i);
+    range_check(channel_index, 0, number_spectrometer());
+    return sounding_zenith_(channel_index);
   }
-  virtual DoubleWithUnit sounding_azimuth(int i) const
+  virtual DoubleWithUnit sounding_azimuth(int channel_index) const
   {
-    range_check(i, 0, number_spectrometer());
-    return sounding_azimuth_(i);
+    range_check(channel_index, 0, number_spectrometer());
+    return sounding_azimuth_(channel_index);
   }
-  virtual blitz::Array<double, 1> stokes_coefficient(int i) const
+  virtual blitz::Array<double, 1> stokes_coefficient(int channel_index) const
   {
-    range_check(i, 0, number_spectrometer());
-    return stokes_coef_(i, blitz::Range::all());
+    range_check(channel_index, 0, number_spectrometer());
+    return stokes_coef_(channel_index, blitz::Range::all());
   }
   virtual DoubleWithUnit relative_velocity(int UNUSED(i)) const 
   { return relative_velocity_; }
-  virtual ArrayWithUnit<double, 1> spectral_coefficient(int Spec_index) const
+
+  virtual ArrayWithUnit<double, 1> spectral_coefficient(int channel_index) const
   { ArrayWithUnit<double, 1> res;
     res.value.resize(spectral_coefficient_.value.cols());
-    res.value = spectral_coefficient_.value(Spec_index, blitz::Range::all());
+    res.value = spectral_coefficient_.value(channel_index, blitz::Range::all());
     res.units = spectral_coefficient_.units;
     return res;
   }
 
-  virtual Time time(int UNUSED(Spec_index)) const { return time_;}
+  virtual blitz::Array<double, 1> spectral_variable(int channel_index) const
+  {
+    blitz::Array<double, 1> var(number_sample(channel_index));
+    blitz::firstIndex i1;
+    var = i1 + 1;
+    return var;
+  }
+
+  virtual Time time(int UNUSED(channel_index)) const { return time_;}
   virtual int64_t sounding_id() const { return hdf_sounding_id_->sounding_id(); }
 
   // This number is only used to set into the outputted HDF file
@@ -102,7 +111,7 @@ public:
   void noise_model(const boost::shared_ptr<NoiseModel>& Noise_model)
   { noise_model_ = Noise_model;}
 
-  virtual SpectralRange radiance(int Spec_index) const;
+  virtual SpectralRange radiance(int channel_index) const;
 protected:
   // Constructor needed when adding new constructor types
   // to inherited classes
@@ -127,7 +136,7 @@ protected:
 /// this in with the noise model, if present.
 //-----------------------------------------------------------------------
 
-  virtual SpectralRange radiance_no_uncertainty(int Spec_index) const = 0;
+  virtual SpectralRange radiance_no_uncertainty(int channel_index) const = 0;
 };
 }
 #endif
