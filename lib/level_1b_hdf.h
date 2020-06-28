@@ -64,7 +64,7 @@ public:
     range_check(i, 0, number_spectrometer());
     return stokes_coef_(i, blitz::Range::all());
   }
-  virtual DoubleWithUnit relative_velocity(int i) const 
+  virtual DoubleWithUnit relative_velocity(int UNUSED(i)) const 
   { return relative_velocity_; }
   virtual ArrayWithUnit<double, 1> spectral_coefficient(int Spec_index) const
   { ArrayWithUnit<double, 1> res;
@@ -74,7 +74,7 @@ public:
     return res;
   }
 
-  virtual Time time(int Spec_index) const { return time_;}
+  virtual Time time(int UNUSED(Spec_index)) const { return time_;}
   virtual int64_t sounding_id() const { return hdf_sounding_id_->sounding_id(); }
 
   // This number is only used to set into the outputted HDF file

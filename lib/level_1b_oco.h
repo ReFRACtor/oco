@@ -23,8 +23,9 @@ public:
 //-----------------------------------------------------------------------
 
   virtual int number_sample(int Spec_index) const;
+  virtual blitz::Array<double, 1> spectral_variable(int channel_index) const;
 
-//----------------------------------------------------------------------ample(int i) const;
+//----------------------------------------------------------------------
 /// The acquisition mode. The data we process will be "Nadir", "Glint"
 /// or "Target". 
 //-----------------------------------------------------------------------
