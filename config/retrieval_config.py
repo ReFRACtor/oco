@@ -62,6 +62,17 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id, **kwargs):
     config_def['instrument']['ils_function']['delta_lambda'] = ils_delta_lambda(l1b_obj, observation_id)
     config_def['instrument']['ils_function']['response'] = ils_response(l1b_obj, observation_id)
 
+    # Fill in values required for computing the dispersion from L1B values
+    config_def['instrument']['dispersion']['number_samples'] = {
+        'creator': creator.l1b.ValueFromLevel1b,
+        'field': 'number_sample',
+    }
+
+    config_def['instrument']['dispersion']['spectral_variable'] = {
+        'creator': creator.l1b.ValueFromLevel1b,
+        'field': 'spectral_variable',
+    }
+
     # Reuse creator set up for determining albedo from the continuum level
     albedo_cont_level = {
         'creator': creator.ground.AlbedoFromSignalLevel,
