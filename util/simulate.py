@@ -33,7 +33,7 @@ class SimulationExecutor(StrategyExecutor):
         for idx in observation_indexes:
             strategy_list.append( { "sim_file": simulation_file, "sim_index": idx, "channel_index": channel_index } )
 
-        super().__init__(self.config_filename, output_filename, strategy_list=strategy_list)
+        super().__init__(self.config_filename, output_filename=output_filename, strategy_list=strategy_list)
 
         with netCDF4.Dataset(simulation_file) as sim_contents:
             self.all_obs_ids = sim_contents['/Scenario/observation_id'][:]
