@@ -11,7 +11,7 @@ import netCDF4
 import numpy as np
 
 # Find where the code repository is located relative to this file
-oco_repo_path = os.path.realpath(os.path.join(os.path.dirname(__file__), "../config"))
+oco_repo_path = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 
 # Add the path to the configuration so it can be imported
 sys.path.append(os.path.join(oco_repo_path))
@@ -21,7 +21,7 @@ from refractor.factory import process_config
 from refractor import framework as rf
 
 # Import configuration module
-from retrieval_config import retrieval_config_definition
+from config.retrieval_config import retrieval_config_definition
 
 logger = logging.getLogger()
 
