@@ -32,7 +32,7 @@ def config(**kwargs):
             'extinction': {
                 'creator': creator.aerosol.AerosolShapeGaussian,
                 # Initialize when reading expected SV
-                'value': np.array([0, 0, 0]),
+                'shape_params': np.array([0, 0, 0]),
             },
             'properties': {
                 'creator': creator.aerosol.AerosolPropertyHdf,

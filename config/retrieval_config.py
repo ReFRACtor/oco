@@ -85,11 +85,11 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id, **kwargs):
     } 
 
     # Lambertian value is directly the albedo level from the continuum
-    config_def['atmosphere']['ground']['lambertian']['value'] = albedo_cont_level
+    config_def['atmosphere']['ground']['lambertian']['polynomial_coeffs'] = albedo_cont_level
 
     # BRDF values is a modification of albedo level based on computed BRDF weight
-    orig_brdf_params = config_def['atmosphere']['ground']['brdf']['value']
-    config_def['atmosphere']['ground']['brdf']['value'] = {
+    orig_brdf_params = config_def['atmosphere']['ground']['brdf']['brdf_parameters']
+    config_def['atmosphere']['ground']['brdf']['brdf_parameters'] = {
         'creator': creator.ground.BrdfWeightFromContinuum,
         'continuum_albedo': albedo_cont_level,
         'brdf_parameters': orig_brdf_params,

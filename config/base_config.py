@@ -34,6 +34,15 @@ def static_value(dataset, dtype=None):
     with h5py.File(static_input_file, "r") as static_input:
         return np.array(static_input[dataset][:], dtype=dtype)
 
+def static_scalar(dataset, dtype=None):
+    value = static_value(dataset, dtype)
+    if np.isscalar(value):
+        return value
+    else:
+        if len(value) != 1:
+            raise Exception(f"Expected scalar value, not array of size: {value.shape}")
+        return value[0]
+
 def static_units(dataset):
     with h5py.File(static_input_file, "r") as static_input:
         return static_input[dataset].attrs['Units'][0].decode('UTF8') 
@@ -51,7 +60,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'creator': creator.absorber.AbsorberGasDefinition,
             'vmr': {
                 'creator': creator.absorber.AbsorberVmrLevel,
-                'value': {
+                'vmr_profile': {
                     'creator': creator.absorber.GasVmrAprioriMetL1b,
                     'reference_atm_file': reference_atm_file,
                 },
@@ -66,7 +75,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'creator': creator.absorber.AbsorberGasDefinition,
             'vmr': {
                 'creator': creator.absorber.AbsorberVmrMet,
-                'value': np.array([1.0]),
+                'vmr_profile': np.array([1.0]),
             },
             'absorption': {
                 'creator': creator.absorber.AbscoLegacy,
@@ -78,11 +87,10 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'creator': creator.absorber.AbsorberGasDefinition,
             'vmr': {
                 'creator': creator.absorber.AbsorberVmrLevel,
-                'value': {
+                'vmr_profile': {
                     'creator': creator.atmosphere.ConstantForAllLevels,
                     'value': static_value("Gas/O2/average_mole_fraction")[0],
                 },
-                'retrieved': False,
             },
             'absorption': {
                 'creator': creator.absorber.AbscoLegacy,
@@ -99,7 +107,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'creator': creator.absorber.AbsorberGasDefinition,
             'vmr': {
                 'creator': creator.absorber.AbsorberVmrLevel,
-                'value': {
+                'vmr_profile': {
                     'creator': creator.absorber.GasVmrAprioriMetL1b,
                     'reference_atm_file': reference_atm_file,
                 },
@@ -114,7 +122,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'creator': creator.absorber.AbsorberGasDefinition,
             'vmr': {
                 'creator': creator.absorber.AbsorberVmrMet,
-                'value': np.array([1.0]),
+                'vmr_profile': np.array([1.0]),
             },
             'absorption': {
                 'creator': creator.absorber.AbscoAer,
@@ -126,11 +134,10 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'creator': creator.absorber.AbsorberGasDefinition,
             'vmr': {
                 'creator': creator.absorber.AbsorberVmrLevel,
-                'value': {
+                'vmr_profile': {
                     'creator': creator.atmosphere.ConstantForAllLevels,
                     'value': static_value("Gas/O2/average_mole_fraction")[0],
                 },
-                'retrieved': False,
             },
             'absorption': {
                 'creator': creator.absorber.AbscoAer,
@@ -203,7 +210,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             },
             'dispersion': {
                 'creator': creator.instrument.DispersionPolynomial,
-                'value': {
+                'polynomial_coeffs': {
                     'creator': creator.value.NamedCommonValue,
                     'name': 'spectral_coefficient',
                 },
@@ -224,7 +231,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                 'corrections': ['eof_1', 'eof_2', 'eof_3'],
                 'eof_1': {
                     'creator': creator.instrument.EmpiricalOrthogonalFunction,
-                    'value': np.array([0, 0, 0], dtype=float),
+                    'scale_factors': np.array([0, 0, 0], dtype=float),
                     'order': 1,
                     'scale_uncertainty': True,
                     'uncertainty': creator.l1b.UncertaintyFromL1b,
@@ -234,7 +241,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                 },
                 'eof_2': {
                     'creator': creator.instrument.EmpiricalOrthogonalFunction,
-                    'value': np.array([0, 0, 0], dtype=float),
+                    'scale_factors': np.array([0, 0, 0], dtype=float),
                     'order': 2,
                     'scale_uncertainty': True,
                     'uncertainty': creator.l1b.UncertaintyFromL1b,
@@ -244,7 +251,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                 },
                 'eof_3': {
                     'creator': creator.instrument.EmpiricalOrthogonalFunction,
-                    'value': np.array([0, 0, 0], dtype=float),
+                    'scale_factors': np.array([0, 0, 0], dtype=float),
                     'order': 3,
                     'scale_uncertainty': True,
                     'uncertainty': creator.l1b.UncertaintyFromL1b,
@@ -254,7 +261,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                 },
                 'eof_4': {
                     'creator': creator.instrument.EmpiricalOrthogonalFunction,
-                    'value': np.array([0, 0, 0], dtype=float),
+                    'scale_factors': np.array([0, 0, 0], dtype=float),
                     'order': 4,
                     'scale_uncertainty': True,
                     'uncertainty': creator.l1b.UncertaintyFromL1b,
@@ -268,7 +275,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'creator': creator.atmosphere.AtmosphereCreator,
             'pressure': {
                 'creator': creator.atmosphere.PressureSigma,
-                'value': {
+                'surface_pressure': {
                     'creator': creator.met.ValueFromMet,
                     'field': "surface_pressure",
                 },
@@ -277,7 +284,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             },
             'temperature': {
                 'creator': creator.atmosphere.TemperatureMet,
-                'value': static_value("Temperature/Offset/a_priori")
+                'offset': static_scalar("Temperature/Offset/a_priori")
             },
             'altitude': { 
                 'creator': creator.atmosphere.AltitudeHydrostatic,
@@ -293,7 +300,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                     'creator': creator.aerosol.AerosolDefinition,
                     'extinction': {
                         'creator': creator.aerosol.AerosolShapeGaussian,
-                        'value': np.array([-4.38203, 1, 0.2]),
+                        'shape_params': np.array([-4.38203, 1, 0.2]),
                     },
                     'properties': {
                         'creator': creator.aerosol.AerosolPropertyHdf,
@@ -304,7 +311,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                     'creator': creator.aerosol.AerosolDefinition,
                     'extinction': {
                         'creator': creator.aerosol.AerosolShapeGaussian,
-                        'value': np.array([-4.38203, 1, 0.2]),
+                        'shape_params': np.array([-4.38203, 1, 0.2]),
                     },
                     'properties': {
                         'creator': creator.aerosol.AerosolPropertyHdf,
@@ -315,7 +322,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                     'creator': creator.aerosol.AerosolDefinition,
                     'extinction': {
                         'creator': creator.aerosol.AerosolShapeGaussian,
-                        'value': np.array([-4.38203, 0.75, 0.1]),
+                        'shape_params': np.array([-4.38203, 0.75, 0.1]),
                     },
                     'properties': {
                         'creator': creator.aerosol.AerosolPropertyHdf,
@@ -327,7 +334,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                     'creator': creator.aerosol.AerosolDefinition,
                     'extinction': {
                         'creator': creator.aerosol.AerosolShapeGaussian,
-                        'value': np.array([-4.38203, 0.3, 0.04]),
+                        'shape_params': np.array([-4.38203, 0.3, 0.04]),
                     },
                     'properties': {
                         'creator': creator.aerosol.AerosolPropertyHdf,
@@ -345,11 +352,11 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                 'child': 'lambertian',
                 'lambertian': {
                     'creator': creator.ground.GroundLambertian,
-                    'value': np.full((num_channels, 1), 1.0),
+                    'polynomial_coeffs': np.full((num_channels, 1), 1.0),
                 },
                 'brdf': {
                     'creator': creator.ground.GroundBrdf,
-                    'value': static_value("/Ground/Brdf/a_priori"),
+                    'brdf_parameters': static_value("/Ground/Brdf/a_priori"),
                     'brdf_type': creator.ground.BrdfTypeOption.soil,
                 },
             },
@@ -381,7 +388,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                 },
                 'instrument_doppler': {
                     'creator': creator.instrument.InstrumentDoppler,
-                    'value': {
+                    'relative_velocity': {
                         'creator': creator.value.NamedCommonValue,
                         'name': 'relative_velocity',
                     },
@@ -393,7 +400,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                         'value': np.array([0.757]),
                         'units':'micron',
                     },
-                    'value': np.array([0.0, 0.0018]),
+                    'coefficients': np.array([0.0, 0.0018]),
                     'cov_unit': rf.Unit("ph / s / m^2 / micron sr^-1"),
                     'which_channels': np.array([0]),
                   },
