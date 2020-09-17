@@ -57,7 +57,7 @@ class AtmosphereValues(DataGroupValues):
     def surface_pressure(self):
         # Creator expects an array
         psurf = self.group_data["surface_pressure"][self.index]
-        return np.array([psurf])
+        return psurf.item()
 
     @property
     def pressure_levels(self):

@@ -47,7 +47,7 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
     for ic_name in ic_config['corrections']:
         if re.search('eof_', ic_name):
             # Set EOF scaling term
-            ic_config[ic_name]['value'] = getattr(sim_data.instrument, ic_name)
+            ic_config[ic_name]['scale_factors'] = getattr(sim_data.instrument, ic_name)
 
             # Set uncertainty
             ic_config[ic_name]['uncertainty'] = rad_uncert
@@ -56,13 +56,13 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
     config_def['atmosphere']['pressure'] = {
         'creator': creator.atmosphere.PressureGrid,
         'pressure_levels': sim_data.atmosphere.pressure_levels,
-        'value': sim_data.atmosphere.surface_pressure,
+        'surface_pressure': sim_data.atmosphere.surface_pressure,
     }
 
     config_def['atmosphere']['temperature'] = {
         'creator': creator.atmosphere.TemperatureLevelOffset,
-        'temperature_levels': sim_data.atmosphere.temperature,
-        'value': np.array([0.0]),
+        'temperature_profile': sim_data.atmosphere.temperature,
+        'offset': 0.0,
     }
 
     # Absorber values
@@ -71,7 +71,7 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
     for name in sim_data.absorber.molecule_names:
         config_def['atmosphere']['absorber'][name]["vmr"] = {
             'creator': creator.absorber.AbsorberVmrLevel,
-            'value': sim_data.absorber.vmr(name),
+            'vmr_profile': sim_data.absorber.vmr(name),
         }
 
     # Aerosol values, reset to start with an empty aerosol configuration
@@ -85,7 +85,7 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
             'creator': creator.aerosol.AerosolDefinition,
             'extinction': {
                 'creator': creator.aerosol.AerosolShapeGaussian,
-                'value': sim_data.aerosol.gaussian_param(name),
+                'shape_params': sim_data.aerosol.gaussian_param(name),
             },
             'properties': {
                 'creator': creator.aerosol.AerosolPropertyHdf,
@@ -97,17 +97,17 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
     # Ground
     if sim_data.ground.type == "lambertian":
         config_def['atmosphere']['ground']['child'] = 'lambertian'
-        config_def['atmosphere']['ground']['lambertian']['value'] = sim_data.ground.lambertian_albedo
+        config_def['atmosphere']['ground']['lambertian']['polynomial_coeffs'] = sim_data.ground.lambertian_albedo
     elif sim_data.ground.type == "brdf":
         config_def['atmosphere']['ground']['child'] = 'brdf'
-        config_def['atmosphere']['ground']['brdf']['value'] = sim_data.ground.brdf_parameters
+        config_def['atmosphere']['ground']['brdf']['brdf_parameters'] = sim_data.ground.brdf_parameters
     else:
         raise param.ParamError("Could not determine ground type")
 
     # Fluorescence
     spec_eff_config = config_def['forward_model']['spectrum_effect']
     if 'fluorescence_effect' in spec_eff_config:
-        spec_eff_config['fluorescence_effect']['value'] = sim_data.atmosphere.fluorescence[:]
+        spec_eff_config['fluorescence_effect']['coefficients'] = sim_data.atmosphere.fluorescence[:]
 
     # Require only the state vector to be set up, this gives us jacobians 
     # without worrying about satisfying solver requirements
