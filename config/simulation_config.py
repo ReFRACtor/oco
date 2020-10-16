@@ -6,7 +6,7 @@ import refractor.factory.creator as creator
 from refractor import framework as rf
 from refractor.config import refractor_config
 
-from .base_config import base_config_definition, aerosol_prop_file
+from .base_config import base_config_definition, aerosol_prop_file, num_channels
 
 from .simulation_file import SimulationFile
 
@@ -30,13 +30,24 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
     config_def['instrument']['ils_function']['delta_lambda'] = sim_data.instrument.ils_delta_lambda
     config_def['instrument']['ils_function']['response'] = sim_data.instrument.ils_response
 
-    # Channels
+    # Window ranges
+    win_ranges = np.zeros((num_channels, 1, 2), dtype=int)
+
+    # Other channels are zeroed out when only one channel index is supplied
     if channel_index is not None:
-        # Zero out other channels
-        win_ranges = config_def['spec_win']['window_ranges']['value']
-        for c_i in range(win_ranges.shape[0]):
-            if c_i != channel_index:
-                win_ranges[c_i, :, :] = 0
+        used_channels = [channel_index]
+    else:
+        used_channels = np.arange(0, num_channels)
+
+    for c_i in used_channels:
+        win_ranges[c_i, 0, 0] = 1
+        win_ranges[c_i, 0, 1] = sim_data.n_samples
+
+    win_ranges = config_def['spec_win']['window_ranges']['value'] = win_ranges
+
+    # Setup so that we only do the appropriate sample indexes if it is defined
+    if sim_data.instrument.bad_sample_mask is not None:
+        config_def['spec_win']['bad_sample_mask'] = sim_data.instrument.bad_sample_mask
 
     # Empirical Orthogonal Functions
     rad_uncert = []

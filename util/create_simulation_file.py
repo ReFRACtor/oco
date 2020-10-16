@@ -104,6 +104,7 @@ class SimulationWriter(object):
 
         self.samp_dim = output_file.createDimension('n_samples', num_samples)
         self.ils_dim = output_file.createDimension('n_ils', num_ils_values)
+        self.index_dim = output_file.createDimension('n_indexes', None)
 
         # Length of names of gas and aerosols
         self.name_len = output_file.createDimension('name_length', self.max_name_len)
@@ -144,6 +145,9 @@ class SimulationWriter(object):
         
         # Instrument
         self.instrument_group = output_file.createGroup('Instrument')
+
+        self.sample_indexes = self.instrument_group.createVariable('sample_indexes', int, (self.snd_id_dim.name, self.channel_dim.name, self.index_dim.name))
+
         self.ils_delta_lambda = self.instrument_group.createVariable('ils_delta_lambda', float, (self.snd_id_dim.name, self.channel_dim.name, self.samp_dim.name, self.ils_dim.name))
         self.ils_response = self.instrument_group.createVariable('ils_response', float, (self.snd_id_dim.name, self.channel_dim.name, self.samp_dim.name, self.ils_dim.name))
         self.rad_uncertainty = self.instrument_group.createVariable('radiance_uncertainty', float, (self.snd_id_dim.name, self.channel_dim.name, self.samp_dim.name))
@@ -219,6 +223,13 @@ class SimulationWriter(object):
             self.solar_distance[snd_idx] = l1b.solar_distance.value
             self.solar_distance.units = l1b.solar_distance.units.name
 
+            # Sample indexes
+            logger.debug("Setting sample indexes:")
+            for chan_idx in range(l1b.number_spectrometer()):
+                chan_samples = snd_config.forward_model.spectral_grid.pixel_list(chan_idx)
+                self.sample_indexes[snd_idx, chan_idx, :len(chan_samples)] = chan_samples
+                logger.debug("%d samples in channel %d" % (len(chan_samples), chan_idx+1))
+
             # ILS
             inst = snd_config.instrument
             for chan_idx in range(l1b.number_spectrometer()):
@@ -240,7 +251,7 @@ class SimulationWriter(object):
                 if re.search('eof_', ic_name):
                     # Set eof_scaling
                     logger.debug("Copying {} parameters".format(ic_name))
-                    self.eofs[ic_name][snd_idx, :] = ic_config[ic_name]['value'][:]
+                    self.eofs[ic_name][snd_idx, :] = ic_config[ic_name]['scale_factors'][:]
 
             # Atmosphere
             logger.debug("Copying pressure")
@@ -306,7 +317,7 @@ class SimulationWriter(object):
             spec_eff_config = snd_config.config_def['forward_model']['spectrum_effect']
             if 'fluorescence_effect' in spec_eff_config:
                 logger.debug("Copying fluorescence parameters")
-                self.fluorescence[snd_idx, :] = spec_eff_config['fluorescence_effect']['value']
+                self.fluorescence[snd_idx, :] = spec_eff_config['fluorescence_effect']['coefficients']
 
     def save(self, output_file):
 

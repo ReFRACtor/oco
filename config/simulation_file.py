@@ -48,6 +48,43 @@ class ScenarioValues(DataGroupValues):
             times.append(rf.Time.time_pgs(float(pgs_time_val)))
         return times
 
+class InstrumentValues(DataGroupValues):
+    
+    def __init__(self, file_contents, index):
+        super().__init__(file_contents, index, "Instrument")
+
+    @property
+    def sample_indexes(self):
+        if "sample_indexes" not in self.group_data.variables.keys():
+            return None
+
+        indexes_in = self.group_data["sample_indexes"][self.index, :, :]
+
+        indexes_out = []
+        for chan_idx in range(indexes_in.shape[0]):
+            chan_indexes = indexes_in[chan_idx, :]
+            w_good = np.logical_not(chan_indexes[:].mask) 
+            indexes_out.append(np.array(chan_indexes[w_good]))
+            
+        return indexes_out
+
+    @property
+    def bad_sample_mask(self):
+        num_samples = self.group_data.parent.dimensions['n_samples'].size
+        num_channels = self.group_data.parent.dimensions['n_channel'].size
+
+        sample_indexes = self.sample_indexes
+
+        if sample_indexes is not None:
+            bad_sample_mask = np.ones((num_channels, num_samples), dtype=bool)
+
+            for chan_idx, good_indexes in enumerate(sample_indexes):
+                bad_sample_mask[chan_idx, good_indexes] = False
+        else:
+            bad_sample_mask = np.zeros((num_channels, num_samples), dtype=bool)
+
+        return bad_sample_mask
+
 class AtmosphereValues(DataGroupValues):
 
     def __init__(self, file_contents, index):
@@ -145,8 +182,12 @@ class SimulationFile(object):
         file_contents = netCDF4.Dataset(filename)
 
         self.scenario = ScenarioValues(file_contents, index)
-        self.instrument = DataGroupValues(file_contents, index, "Instrument")
+        self.instrument = InstrumentValues(file_contents, index)
         self.atmosphere = AtmosphereValues(file_contents, index)
         self.absorber = AbsorberValues(file_contents, index)
         self.aerosol = AerosolValues(file_contents, index)
         self.ground = GroundValues(file_contents, index)
+
+        # Export dimensions
+        for dim_name, dim_obj in file_contents.dimensions.items():
+            setattr(self, dim_name, dim_obj.size)
