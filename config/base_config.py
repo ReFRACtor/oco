@@ -215,9 +215,9 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                     'name': 'spectral_coefficient',
                 },
                 'number_samples': static_value("Instrument/Dispersion/number_pixel"),
-                'spectral_variable': [ np.arange(1, static_value("Instrument/Dispersion/number_pixel")[0]),
-                                       np.arange(1, static_value("Instrument/Dispersion/number_pixel")[1]),
-                                       np.arange(1, static_value("Instrument/Dispersion/number_pixel")[1]), ],
+                'spectral_variable': [ np.arange(1, static_value("Instrument/Dispersion/number_pixel")[0]+1),
+                                       np.arange(1, static_value("Instrument/Dispersion/number_pixel")[1]+1),
+                                       np.arange(1, static_value("Instrument/Dispersion/number_pixel")[2]+1), ],
                 'num_parameters': 2,
             },
             'ils_function': {
