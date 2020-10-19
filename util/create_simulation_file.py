@@ -146,7 +146,7 @@ class SimulationWriter(object):
         # Instrument
         self.instrument_group = output_file.createGroup('Instrument')
 
-        self.sample_indexes = self.instrument_group.createVariable('sample_indexes', int, (self.snd_id_dim.name, self.channel_dim.name, self.index_dim.name))
+        self.sample_indexes = self.instrument_group.createVariable('sample_indexes', np.int32, (self.snd_id_dim.name, self.channel_dim.name, self.index_dim.name))
 
         self.ils_delta_lambda = self.instrument_group.createVariable('ils_delta_lambda', float, (self.snd_id_dim.name, self.channel_dim.name, self.samp_dim.name, self.ils_dim.name))
         self.ils_response = self.instrument_group.createVariable('ils_response', float, (self.snd_id_dim.name, self.channel_dim.name, self.samp_dim.name, self.ils_dim.name))
