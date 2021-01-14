@@ -1,5 +1,6 @@
 import os
 
+import numpy.testing as npt
 import h5py
 
 from refractor.executor.testing import ComparisonExecutor
@@ -14,12 +15,18 @@ def compare_fm(config_filename, expt_results_filename):
     exc = ComparisonExecutor(config_filename)
     exc.execute_simulation()
 
-    for spec_idx, (conv_spec, hr_spec) in zip(exc.captured_radiances.convolved_spectrum, exc.captured_radiances.high_res_spectrum):
+    if len(exc.captured_radiances.convolved_spectrum) == 0:
+        raise Exception("No convolved radiances captured")
+
+    if len(exc.captured_radiances.high_res_spectrum) == 0:
+        raise Exception("No high resolution spectrum captured")
+
+    for spec_idx, (conv_spec, hr_spec) in enumerate(zip(exc.captured_radiances.convolved_spectrum, exc.captured_radiances.high_res_spectrum)):
         expt_conv_rad = expt_data['Spectrum_{}/convolved/radiance'.format(spec_idx+1)][:]
         expt_hr_rad = expt_data['Spectrum_{}/monochromatic/radiance'.format(spec_idx+1)][:]
 
-        calc_conv_rad = conv_spec.spectral_domain.data
-        calc_hr_rad = hr_spec.spectral_domain.data
+        calc_conv_rad = conv_spec.spectral_range.data
+        calc_hr_rad = hr_spec.spectral_range.data
 
         # convolved radiances are on the order of magnitude of ~1e19
         # Use this method so we can better control absolute tolerance
