@@ -21,7 +21,9 @@ def initial_guess_values(use_aerosols):
         ret_data = h5py.File(ret_data_fn, "r")
 
         snd_id_list = [ "%d" % snd_id for snd_id in ret_data['/RetrievalHeader/sounding_id'] ]
-        sounding_index = bisect(snd_id_list, sounding_id)
+        sounding_index = bisect(snd_id_list, sounding_id) - 1
+
+        assert(snd_id_list[sounding_index] == sounding_id)
 
         ret_state = ret_data["RetrievedStateVector/state_vector_result"][sounding_index, :]
         ret_names = ret_data["RetrievedStateVector/state_vector_names"][sounding_index, :]
