@@ -294,24 +294,24 @@ class SimulationWriter(object):
                 elif self.ground_type == GroundType.brdf:
                     logger.debug("Copying ground brdf parameters, channel {}".format(chan_idx))
 
-                    self.brdf[snd_idx, chan_idx, 0] = atm.ground.weight_intercept(chan_idx).value
-                    self.brdf[snd_idx, chan_idx, 1] = atm.ground.weight_slope(chan_idx).value
-                    self.brdf[snd_idx, chan_idx, 2] = atm.ground.rahman_factor(chan_idx).value
-                    self.brdf[snd_idx, chan_idx, 3] = atm.ground.hotspot_parameter(chan_idx).value
-                    self.brdf[snd_idx, chan_idx, 4] = atm.ground.asymmetry_parameter(chan_idx).value
-                    self.brdf[snd_idx, chan_idx, 5] = atm.ground.anisotropy_parameter(chan_idx).value
-                    self.brdf[snd_idx, chan_idx, 6] = atm.ground.breon_factor(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, atm.ground.RAHMAN_KERNEL_FACTOR_INDEX] = atm.ground.rahman_factor(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, atm.ground.RAHMAN_OVERALL_AMPLITUDE_INDEX] = atm.ground.hotspot_parameter(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, atm.ground.RAHMAN_ASYMMETRY_FACTOR_INDEX] = atm.ground.asymmetry_parameter(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, atm.ground.RAHMAN_GEOMETRIC_FACTOR_INDEX] = atm.ground.anisotropy_parameter(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, atm.ground.BREON_KERNEL_FACTOR_INDEX] = atm.ground.breon_factor(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, atm.ground.BRDF_WEIGHT_INTERCEPT_INDEX] = atm.ground.weight_intercept(chan_idx).value
+                    self.brdf[snd_idx, chan_idx, atm.ground.BRDF_WEIGHT_SLOPE_INDEX] = atm.ground.weight_slope(chan_idx).value
 
             if self.ground_type == GroundType.lambertian:
                 self.albedo.parameter_names = "0: Albedo offset\n 1: Albedo intercept..."
             elif self.ground_type == GroundType.brdf:
-                self.brdf.parameter_names = """0: BRDF overall weight intercept
-1: BRDF overall weight slope
-2: Rahman kernel factor
-3: Rahman hotspot parameter
-4: Rahman asymmetry factor
-5: Rahman anisotropy parameter
-6: Breon kernel factor"""
+                self.brdf.parameter_names = f"""{atm.ground.RAHMAN_KERNEL_FACTOR_INDEX}: Rahman kernel factor
+{atm.ground.RAHMAN_OVERALL_AMPLITUDE_INDEX}: Rahman hotspot parameter
+{atm.ground.RAHMAN_ASYMMETRY_FACTOR_INDEX}: Rahman asymmetry factor
+{atm.ground.RAHMAN_GEOMETRIC_FACTOR_INDEX}: Rahman anisotropy parameter
+{atm.ground.BREON_KERNEL_FACTOR_INDEX}: Breon kernel factor
+{atm.ground.BRDF_WEIGHT_INTERCEPT_INDEX}: BRDF overall weight intercept
+{atm.ground.BRDF_WEIGHT_SLOPE_INDEX}: BRDF overall weight slope"""
  
             # Fluorescence
             spec_eff_config = snd_config.config_def['forward_model']['spectrum_effect']
