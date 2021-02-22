@@ -17,8 +17,8 @@ static_input_file = os.path.join(config_dir, "static_input.h5")
 solar_file = os.path.join(config_dir, "oco_solar_model.h5")
 eof_file = os.path.join(config_dir, "oco_eof.h5")
 
-aerosol_prop_file = os.path.join(os.environ["REFRACTOR_INPUTS"], "l2_aerosol_combined.h5")
-reference_atm_file =  os.path.join(os.environ["REFRACTOR_INPUTS"], "reference_atmosphere.h5")
+aerosol_prop_file = os.path.join(os.environ["REFRACTOR_INPUT_PATH"], "l2_aerosol_combined.h5")
+reference_atm_file =  os.path.join(os.environ["REFRACTOR_INPUT_PATH"], "reference_atmosphere.h5")
 covariance_file = os.path.join(config_dir, "retrieval_covariance.h5")
 
 # OCO has 3 channels (bands)
