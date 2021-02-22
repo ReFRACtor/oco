@@ -1,5 +1,6 @@
 import os
 
+import numpy as np
 import numpy.testing as npt
 import h5py
 
@@ -21,19 +22,31 @@ def compare_fm(config_filename, expt_results_filename):
     if len(exc.captured_radiances.high_res_spectrum) == 0:
         raise Exception("No high resolution spectrum captured")
 
-    for spec_idx, (conv_spec, hr_spec) in enumerate(zip(exc.captured_radiances.convolved_spectrum, exc.captured_radiances.high_res_spectrum)):
-        expt_conv_rad = expt_data['Spectrum_{}/convolved/radiance'.format(spec_idx+1)][:]
-        expt_hr_rad = expt_data['Spectrum_{}/monochromatic/radiance'.format(spec_idx+1)][:]
+    for sensor_idx, (conv_spec, hr_spec) in enumerate(zip(exc.captured_radiances.convolved_spectrum, exc.captured_radiances.high_res_spectrum)):
+
+        expt_hr_grid = expt_data['Spectrum_{}/monochromatic/grid'.format(sensor_idx+1)][:]
+
+        expt_conv_rad = expt_data['Spectrum_{}/convolved/radiance'.format(sensor_idx+1)][:]
+        expt_hr_rad = expt_data['Spectrum_{}/monochromatic/radiance'.format(sensor_idx+1)][:]
+
+        calc_hr_grid = hr_spec.spectral_domain.data
 
         calc_conv_rad = conv_spec.spectral_range.data
         calc_hr_rad = hr_spec.spectral_range.data
 
         # convolved radiances are on the order of magnitude of ~1e19
         # Use this method so we can better control absolute tolerance
-        npt.assert_allclose(expt_conv_rad, calc_conv_rad, rtol=1e-3, atol=1e15)
+        npt.assert_allclose(expt_conv_rad, calc_conv_rad, rtol=2e-3)
 
-        # monochromatic radiance should be the same to almost machine precision
-        npt.assert_almost_equal(expt_hr_rad, calc_hr_rad, decimal=9)
+        # monochromatic radiance should have a higher degree of similarity
+        # Grids are not always 100% the same exact length, may be off by 1 point, so 
+        # check only comparable regions
+        w_compare_calc = np.where(np.logical_and(calc_hr_grid >= expt_hr_grid[0], 
+                                                 calc_hr_grid <= expt_hr_grid[-1]))
+        w_compare_expt = np.where(np.logical_and(expt_hr_grid >= calc_hr_grid[w_compare_calc][0], 
+                                                 expt_hr_grid <= calc_hr_grid[w_compare_calc][-1]))
+
+        npt.assert_allclose(expt_hr_rad[w_compare_expt], calc_hr_rad[w_compare_calc], rtol=2e-5)
 
 # Expected results captured from RtRetrievalFramework revision e096dc
 # using notebooks/computed_expected_radiances.ipynb from
