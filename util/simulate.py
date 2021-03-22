@@ -40,7 +40,7 @@ class SimulationExecutor(StrategyExecutor):
 
         self.obs_indexes = observation_indexes
 
-    def attach_output(self, config_inst, step_index=0):
+    def attach_output(self, config_inst, step_index=0, simulation=False):
         super().attach_output(config_inst, step_index)
 
         obs_id = self.all_obs_ids[self.obs_indexes[step_index]]

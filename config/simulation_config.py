@@ -71,7 +71,7 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
     }
 
     config_def['atmosphere']['temperature'] = {
-        'creator': creator.atmosphere.TemperatureLevelOffset,
+        'creator': creator.atmosphere.TemperatureLevel,
         'temperature_profile': sim_data.atmosphere.temperature,
         'offset': 0.0,
     }
