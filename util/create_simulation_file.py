@@ -28,7 +28,7 @@ logger = logging.getLogger()
 class GroundType(Enum):
     lambertian = "lambertian"
     coxmunk = "coxmunk"
-    coxmunk_plus_lambertian = "coxmunk_plus_lambertian"
+    coxmunk_lambertian = "coxmunk_lambertian"
     brdf = "brdf"
 
 class SimulationWriter(object): 
@@ -115,6 +115,9 @@ class SimulationWriter(object):
         elif self.ground_type == GroundType.brdf:
             # Weight offset, slope + 5 BRDF kernel params
             self.brdf_params_dim = output_file.createDimension('n_brdf_params', 7)
+        elif self.ground_type == GroundType.coxmunk_lambertian:
+            # 2 params for each channel
+            self.coxmunk_albedo_dim = output_file.createDimension('n_coxmunk_albedo', 2)
 
         # Number of aerosol parameters
         self.aer_param_dim = output_file.createDimension('n_aerosol_parameters', 3)
@@ -178,10 +181,17 @@ class SimulationWriter(object):
 
         # Ground
         self.ground_group = self.atmosphere_group.createGroup('Ground')
+        self.ground_group.type = self.ground_type.name
+
         if self.ground_type == GroundType.lambertian:
             self.albedo = self.ground_group.createVariable('lambertian_albedo', float, (self.snd_id_dim.name, self.channel_dim.name, self.albedo_poly_dim.name))
         elif self.ground_type == GroundType.brdf:
             self.brdf = self.ground_group.createVariable('brdf_parameters', float, (self.snd_id_dim.name, self.channel_dim.name, self.brdf_params_dim.name))
+        elif self.ground_type == GroundType.coxmunk:
+            self.windspeed = self.ground_group.createVariable('windspeed', float, (self.snd_id_dim.name,))
+        elif self.ground_type == GroundType.coxmunk_lambertian:
+            self.windspeed = self.ground_group.createVariable('windspeed', float, (self.snd_id_dim.name,))
+            self.coxmunk_albedo = self.ground_group.createVariable('coxmunk_albedo', float, (self.snd_id_dim.name, self.channel_dim.name, self.coxmunk_albedo_dim.name))
 
         # Fluorescence
         self.fluorescence = self.atmosphere_group.createVariable('fluorescence', float, (self.snd_id_dim.name, self.fluor_param_dim.name))
@@ -288,7 +298,7 @@ class SimulationWriter(object):
             for chan_idx in range(l1b.number_spectrometer()):
                 if self.ground_type == GroundType.lambertian:
                     logger.debug("Copying ground albedo parameters, channel {}".format(chan_idx))
-                    ref_point = atm.ground.reference_point(0)
+                    ref_point = atm.ground.reference_point(chan_idx)
                     self.albedo[snd_idx, chan_idx, 0] = atm.ground.albedo(ref_point, chan_idx).value
                     self.albedo[snd_idx, chan_idx, 1:] = 0.0
                 elif self.ground_type == GroundType.brdf:
@@ -301,7 +311,18 @@ class SimulationWriter(object):
                     self.brdf[snd_idx, chan_idx, atm.ground.BREON_KERNEL_FACTOR_INDEX] = atm.ground.breon_factor(chan_idx).value
                     self.brdf[snd_idx, chan_idx, atm.ground.BRDF_WEIGHT_INTERCEPT_INDEX] = atm.ground.weight_intercept(chan_idx).value
                     self.brdf[snd_idx, chan_idx, atm.ground.BRDF_WEIGHT_SLOPE_INDEX] = atm.ground.weight_slope(chan_idx).value
+                elif self.ground_type == GroundType.coxmunk_lambertian:
+                    logger.debug("Copying ground coxmunk lambertian parameters, channel {}".format(chan_idx))
+                    ref_point = atm.ground.lambertian.reference_point(chan_idx)
+                    offset = chan_idx*2
+                    self.coxmunk_albedo[snd_idx, chan_idx, :] = atm.ground.lambertian.sub_state_vector_values.value[offset:offset+2]
 
+            # Windspeed
+            if self.ground_type == GroundType.coxmunk:
+                self.windspeed[snd_idx] = atm.ground.windspeed().value
+            elif self.ground_type == GroundType.coxmunk_lambertian:
+                self.windspeed[snd_idx] = atm.ground.coxmunk.windspeed().value
+ 
             if self.ground_type == GroundType.lambertian:
                 self.albedo.parameter_names = "0: Albedo offset\n 1: Albedo intercept..."
             elif self.ground_type == GroundType.brdf:
@@ -312,6 +333,8 @@ class SimulationWriter(object):
 {atm.ground.BREON_KERNEL_FACTOR_INDEX}: Breon kernel factor
 {atm.ground.BRDF_WEIGHT_INTERCEPT_INDEX}: BRDF overall weight intercept
 {atm.ground.BRDF_WEIGHT_SLOPE_INDEX}: BRDF overall weight slope"""
+            elif self.ground_type == GroundType.coxmunk_lambertian:
+                self.coxmunk_albedo.parameter_names = "0: Albedo offset\n 1: Albedo intercept..."
  
             # Fluorescence
             spec_eff_config = snd_config.config_def['forward_model']['spectrum_effect']

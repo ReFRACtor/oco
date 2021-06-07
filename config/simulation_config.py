@@ -112,6 +112,13 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
     elif sim_data.ground.type == "brdf":
         config_def['atmosphere']['ground']['child'] = 'brdf'
         config_def['atmosphere']['ground']['brdf']['brdf_parameters'] = sim_data.ground.brdf_parameters
+    elif sim_data.ground.type == "coxmunk":
+        config_def['atmosphere']['ground']['child'] = 'coxmunk'
+        config_def['atmosphere']['ground']['coxmunk']['windspeed'] = sim_data.ground.windspeed.item()
+    elif sim_data.ground.type == "coxmunk_lambertian":
+        config_def['atmosphere']['ground']['child'] = 'coxmunk_lambertian'
+        config_def['atmosphere']['ground']['coxmunk_lambertian']['windspeed'] = sim_data.ground.windspeed.item()
+        config_def['atmosphere']['ground']['coxmunk_lambertian']['albedo_coeffs'] = sim_data.ground.coxmunk_albedo
     else:
         raise param.ParamError("Could not determine ground type")
 

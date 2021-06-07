@@ -168,13 +168,8 @@ class GroundValues(DataGroupValues):
 
     @property
     def type(self):
-
-        if "lambertian_albedo" in self.group_data.variables:
-            return "lambertian"
-        elif "brdf_parameters" in self.group_data.variables:
-            return "brdf"
-        else:
-            raise Exception("Could not determine ground type")
+        
+        return self.group_data.type
 
 class SimulationFile(object):
 
