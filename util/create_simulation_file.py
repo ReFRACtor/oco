@@ -181,7 +181,7 @@ class SimulationWriter(object):
 
         # Ground
         self.ground_group = self.atmosphere_group.createGroup('Ground')
-        self.ground_group.type = self.ground_type.name
+        self.ground_type_var = self.ground_group.createVariable('type', 'S1', (self.snd_id_dim.name, self.name_len.name))
 
         if self.ground_type == GroundType.lambertian:
             self.albedo = self.ground_group.createVariable('lambertian_albedo', float, (self.snd_id_dim.name, self.channel_dim.name, self.albedo_poly_dim.name))
@@ -295,6 +295,9 @@ class SimulationWriter(object):
                 self.aer_prop_name[snd_idx, aer_index, :] = netCDF4.stringtochar(np.array([prop_name], 'S%d' % self.max_name_len))
 
             # Ground
+            ground_type_str = self.ground_type.name
+            self.ground_type_var[snd_idx, :] = netCDF4.stringtochar(np.array([ground_type_str], 'S%d' % self.max_name_len))
+
             for chan_idx in range(l1b.number_spectrometer()):
                 if self.ground_type == GroundType.lambertian:
                     logger.debug("Copying ground albedo parameters, channel {}".format(chan_idx))

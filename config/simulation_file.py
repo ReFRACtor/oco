@@ -168,8 +168,8 @@ class GroundValues(DataGroupValues):
 
     @property
     def type(self):
-        
-        return self.group_data.type
+
+        return netCDF4.chartostring(self.group_data["type"][self.index, :])
 
 class SimulationFile(object):
 
