@@ -1,6 +1,6 @@
 import numpy as np
 
-import refractor.factory.creator as creator
+from refractor.framework.factory import creator
 from refractor import framework as rf
 
 from oco import Level1bOco, OcoMetFile, OcoSoundingId, OcoNoiseModel

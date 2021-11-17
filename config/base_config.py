@@ -4,8 +4,7 @@ from enum import Enum
 
 import numpy as np
 
-import refractor.factory.creator as creator
-import refractor.factory.param as param
+from refractor.framework.factory import creator, param
 from refractor import framework as rf
 
 absco_base_path = os.environ['ABSCO_PATH']
