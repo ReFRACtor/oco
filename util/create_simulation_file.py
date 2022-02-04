@@ -17,7 +17,7 @@ oco_repo_path = os.path.realpath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(os.path.join(oco_repo_path))
 
 # Import ReFRACtor framework
-from refractor.factory import process_config
+from refractor.framework.factory import process_config
 from refractor import framework as rf
 
 # Import configuration module
@@ -33,7 +33,7 @@ class GroundType(Enum):
 
 class SimulationWriter(object): 
 
-    def __init__(self, l1b_file, met_file, sounding_id_list, max_name_len=25, albedo_degree=4, ground_type=GroundType.lambertian):
+    def __init__(self, l1b_file, met_file, sounding_id_list, max_name_len=25, albedo_degree=4, ground_type=GroundType.lambertian, enable_cloud_3d=False):
         
         logging.debug("Creating simulation file using L1B: %s, Met: %s" % (l1b_file, met_file))
 
@@ -46,6 +46,8 @@ class SimulationWriter(object):
 
         logger.debug("Using ground type: {}".format(ground_type))
         self.ground_type = GroundType(ground_type)
+
+        self.enable_cloud_3d = enable_cloud_3d
 
     def config(self, sounding_id):
 
@@ -125,6 +127,9 @@ class SimulationWriter(object):
         # Number of fluorescence parameters
         self.fluor_param_dim = output_file.createDimension('n_fluorescence_parameters', 2)
 
+        if self.enable_cloud_3d:
+            self.cloud_3d_dim = output_file.createDimension('n_cloud_3d_parameters', 2)
+
     def _create_datasets(self, output_file):
 
         logger.debug("Creating file datasets")
@@ -195,6 +200,9 @@ class SimulationWriter(object):
 
         # Fluorescence
         self.fluorescence = self.atmosphere_group.createVariable('fluorescence', float, (self.snd_id_dim.name, self.fluor_param_dim.name))
+
+        if self.enable_cloud_3d:
+            self.cloud_3d = self.atmosphere_group.createVariable('cloud_3d', float, (self.snd_id_dim.name, self.channel_dim.name, self.fluor_param_dim.name))
 
     def _fill_datasets(self, output_file):
 
@@ -269,8 +277,8 @@ class SimulationWriter(object):
             self.surface_pressure[snd_idx] = atm.pressure.surface_pressure.value.value
             self.surface_pressure.units = atm.pressure.surface_pressure.units.name
             
-            self.pressure_levels[snd_idx, :] = atm.pressure.pressure_grid.value.value
-            self.pressure_levels.units = atm.pressure.pressure_grid.units.name
+            self.pressure_levels[snd_idx, :] = atm.pressure.pressure_grid().value.value
+            self.pressure_levels.units = atm.pressure.pressure_grid().units.name
 
             logger.debug("Copying temperature")
             temp_adwu = atm.temperature.temperature_grid(atm.pressure)
@@ -345,6 +353,11 @@ class SimulationWriter(object):
                 logger.debug("Copying fluorescence parameters")
                 self.fluorescence[snd_idx, :] = spec_eff_config['fluorescence_effect']['coefficients']
 
+            if self.enable_cloud_3d:
+                logger.debug("Creating cloud 3D values")
+                self.cloud_3d[snd_idx, :, 0] = 0.2
+                self.cloud_3d[snd_idx, :, 1] = 0.0002
+
     def save(self, output_file):
 
         logger.debug("Writing to file: %s" % output_file.filepath())
@@ -375,6 +388,9 @@ def main():
     parser.add_argument("-s", "--sounding_ids_file", metavar="FILE", required=True,
         help="File with list of sounding ids to simulate")
 
+    parser.add_argument("--cloud_3d", action="store_true",
+        help="Add Cloud 3D effect values to simulation file")
+
     ground_types = [ v.value for v in list(GroundType) ]
     parser.add_argument("-g", "--ground_type", choices=ground_types, default=GroundType.lambertian.value)
 
@@ -394,7 +410,7 @@ def main():
             for sounding_id_line in sounding_id_file:
                 sounding_id_list.append( sounding_id_line.strip() )
 
-        sim_file = SimulationWriter(args.l1b_file, args.met_file, sounding_id_list, ground_type=args.ground_type)
+        sim_file = SimulationWriter(args.l1b_file, args.met_file, sounding_id_list, ground_type=args.ground_type, enable_cloud_3d=args.cloud_3d)
         sim_file.save(output_file)
 
 if __name__ == "__main__":

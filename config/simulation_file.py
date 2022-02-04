@@ -8,8 +8,15 @@ class DataGroupValues(object):
     def __init__(self, file_contents, index, group_name):
         self.index = index
         self.group_data = file_contents[group_name]
+        self.optional = []
 
     def __getattr__(self, name):
+
+        if not name in self.group_data.variables.keys():
+            if name in self.optional:
+                return None
+            else:
+                raise ValueError(f"Could not find variable {name} within group: {self.group_data}")
 
         dataset = self.group_data[name]
         data_value = dataset[self.index, ...]
@@ -89,6 +96,7 @@ class AtmosphereValues(DataGroupValues):
 
     def __init__(self, file_contents, index):
         super().__init__(file_contents, index, "Atmosphere")
+        self.optional.append("cloud_3d")
 
     @property
     def surface_pressure(self):

@@ -6,8 +6,7 @@ import logging
 
 import netCDF4
 
-from refractor.executor import StrategyExecutor
-from refractor.output.base import OutputBase
+from refractor.framework import StrategyExecutor, OutputBase
 
 logger = logging.getLogger(__name__)
 

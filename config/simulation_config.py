@@ -2,9 +2,9 @@ import re
 
 import numpy as np
 
-import refractor.factory.creator as creator
-from refractor import framework as rf
-from refractor.config import refractor_config
+from refractor.framework.factory import creator
+from refractor.framework.config import refractor_config
+import refractor.framework as rf
 
 from .base_config import base_config_definition, aerosol_prop_file, num_channels
 
@@ -126,6 +126,16 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
     spec_eff_config = config_def['forward_model']['spectrum_effect']
     if 'fluorescence_effect' in spec_eff_config:
         spec_eff_config['fluorescence_effect']['coefficients'] = sim_data.atmosphere.fluorescence[:]
+
+    # Add cloud 3d effect if defined in simulation file
+    cloud_3d_values = sim_data.atmosphere.cloud_3d
+    if cloud_3d_values is not None:
+        spec_eff_config['effects'].insert(0, 'cloud_3d')
+        spec_eff_config['cloud_3d'] = {
+            'creator': creator.forward_model.Cloud3dEffect,
+            'offset': cloud_3d_values[:, 0],
+            'slope': cloud_3d_values[:, 1],
+        }
 
     # Require only the state vector to be set up, this gives us jacobians 
     # without worrying about satisfying solver requirements
