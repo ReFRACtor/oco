@@ -119,6 +119,10 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
         config_def['atmosphere']['ground']['child'] = 'coxmunk_lambertian'
         config_def['atmosphere']['ground']['coxmunk_lambertian']['windspeed'] = sim_data.ground.windspeed.item()
         config_def['atmosphere']['ground']['coxmunk_lambertian']['albedo_coeffs'] = sim_data.ground.coxmunk_albedo
+    elif sim_data.ground.type == "lambertian_piecewise":
+        config_def['atmosphere']['ground']['child'] = 'lambertian_piecewise'
+        config_def['atmosphere']['ground']['lambertian_piecewise']['grid'] = sim_data.ground.lambertian_albedo_grid
+        config_def['atmosphere']['ground']['lambertian_piecewise']['albedo'] = sim_data.ground.lambertian_albedo_points
     else:
         raise param.ParamError("Could not determine ground type")
 

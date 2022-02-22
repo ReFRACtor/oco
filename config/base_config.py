@@ -49,6 +49,46 @@ def static_units(dataset):
 def static_spectral_domain(dataset):
     return rf.SpectralDomain(static_value(dataset), rf.Unit(static_units(dataset)))
 
+class PiecewiseLambertianGrid(creator.base.Creator):
+
+    spec_win = param.InstanceOf(rf.SpectralWindowRange)
+    num_points_per_channel = param.Scalar(int)
+
+    def create(self, **kwargs):
+
+        spec_win = self.spec_win()
+        num_points = self.num_points_per_channel()
+
+        chan_values = []
+        grid_units = None
+
+        for channel_idx in range(spec_win.number_spectrometer):
+
+            lower_bound = spec_win.spectral_bound.lower_bound(channel_idx).value
+            upper_bound = spec_win.spectral_bound.upper_bound(channel_idx).value
+            grid_units = spec_win.spectral_bound.lower_bound(channel_idx).units
+            
+            chan_values.append(np.linspace(lower_bound, upper_bound, num_points))
+
+        return rf.ArrayWithUnit(np.concatenate(chan_values), grid_units)
+
+class DynamicCovarianceModification(creator.LoadValuesFromHDF):
+
+    ground = param.InstanceOf(rf.Ground, required=False)
+
+    def create(self, **kwargs):
+        cov_dict = super().create(**kwargs)
+
+        if((ground := self.ground()) != None):
+            if isinstance(ground, rf.GroundLambertianPiecewise):
+                n_albedo = ground.spectral_points().value.shape[0]
+                piecewise_cov = np.zeros((n_albedo, n_albedo))
+                np.fill_diagonal(piecewise_cov, 0.1)
+
+                cov_dict["ground/lambertian_piecewise"] = piecewise_cov
+
+        return cov_dict
+
 # Common configuration defintion shared amonst retrieval and simulation types of configuration
 def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
 
@@ -353,6 +393,14 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                     'creator': creator.ground.GroundLambertian,
                     'polynomial_coeffs': np.full((num_channels, 1), 1.0),
                 },
+                'lambertian_piecewise': {
+                    'creator': creator.GroundLambertianPiecewise,
+                    'grid': {
+                        'creator': PiecewiseLambertianGrid,
+                        'num_points_per_channel': 10,
+                    },
+                    'albedo': np.full(num_channels * 10, 0.5),
+                },
                 'brdf': {
                     'creator': creator.ground.GroundBrdf,
                     'brdf_parameters': static_value("/Ground/Brdf/a_priori"),
@@ -443,7 +491,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'covariance': {
                 'creator': creator.retrieval.CovarianceByComponent,
                 'values': {
-                    'creator': creator.value.LoadValuesFromHDF,
+                    'creator': DynamicCovarianceModification,
                     'filename': covariance_file,
                 }
             },

@@ -27,6 +27,7 @@ logger = logging.getLogger()
 
 class GroundType(Enum):
     lambertian = "lambertian"
+    lambertian_piecewise = "lambertian_piecewise"
     coxmunk = "coxmunk"
     coxmunk_lambertian = "coxmunk_lambertian"
     brdf = "brdf"
@@ -114,6 +115,8 @@ class SimulationWriter(object):
         # Ground dimensions conditional on the ground type used
         if self.ground_type == GroundType.lambertian:
             self.albedo_poly_dim = output_file.createDimension('n_albedo_poly', self.albedo_degree + 1)
+        elif self.ground_type == GroundType.lambertian_piecewise:
+            self.albedo_piecewise_dim = output_file.createDimension('n_albedo_grid', None)
         elif self.ground_type == GroundType.brdf:
             # Weight offset, slope + 5 BRDF kernel params
             self.brdf_params_dim = output_file.createDimension('n_brdf_params', 7)
@@ -190,6 +193,9 @@ class SimulationWriter(object):
 
         if self.ground_type == GroundType.lambertian:
             self.albedo = self.ground_group.createVariable('lambertian_albedo', float, (self.snd_id_dim.name, self.channel_dim.name, self.albedo_poly_dim.name))
+        elif self.ground_type == GroundType.lambertian_piecewise:
+            self.albedo_grid = self.ground_group.createVariable('lambertian_albedo_grid', float, (self.snd_id_dim.name, self.albedo_piecewise_dim.name))
+            self.albedo_points = self.ground_group.createVariable('lambertian_albedo_points', float, (self.snd_id_dim.name, self.albedo_piecewise_dim.name))
         elif self.ground_type == GroundType.brdf:
             self.brdf = self.ground_group.createVariable('brdf_parameters', float, (self.snd_id_dim.name, self.channel_dim.name, self.brdf_params_dim.name))
         elif self.ground_type == GroundType.coxmunk:
@@ -328,12 +334,27 @@ class SimulationWriter(object):
                     offset = chan_idx*2
                     self.coxmunk_albedo[snd_idx, chan_idx, :] = atm.ground.lambertian.sub_state_vector_values.value[offset:offset+2]
 
+            # Lambertian piecewise
+            if self.ground_type == GroundType.lambertian_piecewise:
+                albedo_grid = atm.ground.spectral_points()
+                
+                albedo_values = np.zeros(albedo_grid.value.shape[0])
+                for idx in range(albedo_grid.value.shape[0]):
+                    val_at_point = atm.ground.value_at_point(albedo_grid[idx])
+                    albedo_values[idx] = val_at_point.value
+
+                self.albedo_grid[snd_idx, :] = albedo_grid.value
+                self.albedo_grid.units = albedo_grid.units.name
+
+                self.albedo_points[snd_idx, :] = albedo_values
+
             # Windspeed
             if self.ground_type == GroundType.coxmunk:
                 self.windspeed[snd_idx] = atm.ground.windspeed().value
             elif self.ground_type == GroundType.coxmunk_lambertian:
                 self.windspeed[snd_idx] = atm.ground.coxmunk.windspeed().value
  
+            # Extra data annotations
             if self.ground_type == GroundType.lambertian:
                 self.albedo.parameter_names = "0: Albedo offset\n 1: Albedo intercept..."
             elif self.ground_type == GroundType.brdf:
