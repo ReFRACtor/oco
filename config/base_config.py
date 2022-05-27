@@ -107,7 +107,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'absorption': {
                 'creator': creator.absorber.AbscoLegacy,
                 'table_scale': [1.0, 1.0, 1.004],
-                'filename': "{absco_base_path}/co2_devi2015_wco2scale-nist_sco2scale-unity.h5",
+                'filename': "{absco_base_path}/co2_v51.hdf",
             },
         },
         'H2O': {
@@ -119,7 +119,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'absorption': {
                 'creator': creator.absorber.AbscoLegacy,
                 'table_scale': 1.0,
-                'filename': "{absco_base_path}/h2o_hitran12.h5",
+                'filename': "{absco_base_path}/h2o_v51.hdf",
             },
         },
         'O2': {
@@ -134,7 +134,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'absorption': {
                 'creator': creator.absorber.AbscoLegacy,
                 'table_scale': 1.0,
-                'filename': "{absco_base_path}/o2_v151005_cia_mlawer_v151005r1_narrow.h5",
+                'filename': "{absco_base_path}/o2_v51.hdf",
              },
         },
     }
@@ -334,27 +334,17 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             },
             'aerosol': {
                 'creator': creator.aerosol.AerosolOptical,
-                'aerosols': [ "kahn_2b", "kahn_3b", "water", "ice" ],
-                'kahn_2b': {
+                'aerosols': [ "ice", "water", "strat" ],
+                'ice': {
                     'creator': creator.aerosol.AerosolDefinition,
                     'extinction': {
                         'creator': creator.aerosol.AerosolShapeGaussian,
-                        'shape_params': np.array([-4.38203, 1, 0.2]),
+                        'shape_params': np.array([-4.38203, 0.3, 0.04]),
                     },
                     'properties': {
                         'creator': creator.aerosol.AerosolPropertyHdf,
                         'filename': aerosol_prop_file,
-                    },
-                },
-                'kahn_3b': {
-                    'creator': creator.aerosol.AerosolDefinition,
-                    'extinction': {
-                        'creator': creator.aerosol.AerosolShapeGaussian,
-                        'shape_params': np.array([-4.38203, 1, 0.2]),
-                    },
-                    'properties': {
-                        'creator': creator.aerosol.AerosolPropertyHdf,
-                        'filename': aerosol_prop_file,
+                        'prop_name': "ice_cloud_MODIS6_deltaM_1000",
                     },
                 },
                 'water': {
@@ -369,19 +359,18 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                         'prop_name': "wc_008",
                     },
                 },
-                'ice': {
+                'strat': {
                     'creator': creator.aerosol.AerosolDefinition,
                     'extinction': {
                         'creator': creator.aerosol.AerosolShapeGaussian,
-                        'shape_params': np.array([-4.38203, 0.3, 0.04]),
+                        'shape_params': np.array([-5.11599580975408205124,0.03,0.04]),
                     },
                     'properties': {
                         'creator': creator.aerosol.AerosolPropertyHdf,
                         'filename': aerosol_prop_file,
-                        'prop_name': "ice_cloud_MODIS6_deltaM_1000",
+                        'prop_name': "strat",
                     },
                 },
-
             },
             'relative_humidity': {
                 'creator': creator.atmosphere.RelativeHumidity,
