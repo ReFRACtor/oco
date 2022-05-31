@@ -48,14 +48,19 @@ public:
 
     void print(std::ostream& Os) const { Os << "OcoMetFile"; }
 
+    double read_scalar(const std::string& Field) const;
+    blitz::Array<double, 1> read_array(const std::string& Field) const;
+    blitz::Array<int, 1> read_array_int(const std::string& Field) const;
+    blitz::Array<double, 2> read_array_2d(const std::string& Field) const;
+    const std::string& file_name() const { return h.file_name(); }
+    const HdfFile& hdf_file() const { return h;}
+    const boost::shared_ptr<HdfSoundingId>& sounding_id() const { return hsid; }
+
 private:
 
     //-----------------------------------------------------------------------
     /// OCO specific ECMWF reader routines
     //-----------------------------------------------------------------------
-
-    double read_scalar(const std::string& Field) const;
-    blitz::Array<double, 1> read_array(const std::string& Field) const;
 
     HdfFile h;
     boost::shared_ptr<HdfSoundingId> hsid;
