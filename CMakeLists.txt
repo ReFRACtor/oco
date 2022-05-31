@@ -118,6 +118,15 @@ find_package(Boost REQUIRED COMPONENTS regex date_time iostreams filesystem syst
 list(APPEND THIRDPARTY_INCLUDES ${Boost_INCLUDE_DIRS})
 list(APPEND THIRDPARTY_LIBRARIES ${Boost_LIBRARIES})
 
+# Under some conditions we need to explicitly link to libstdc++ for a successfull test_all build
+find_library(LIB_STDCPP NAMES stdc++)
+if(NOT ${LIB_STDCPP} MATCHES "-NOTFOUND")
+    message(STATUS "Linking with libstdc++: ${LIB_STDCPP}")
+    list(APPEND THIRDPARTY_LIBRARIES ${LIB_STDCPP})
+else()
+    message(WARNING "Could not find libstdc++")
+endif()
+
 # When we are using debug mode, turn on the blitz range checking.
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DBZ_DEBUG")
 
