@@ -6,7 +6,9 @@ import sys
 import logging
 from enum import Enum
 from collections import OrderedDict
+from itertools import zip_longest
 
+import h5py
 import netCDF4
 import numpy as np
 
@@ -34,13 +36,21 @@ class GroundType(Enum):
 
 class SimulationWriter(object): 
 
-    def __init__(self, l1b_file, met_file, sounding_id_list, max_name_len=25, albedo_degree=4, ground_type=GroundType.lambertian, enable_cloud_3d=False):
+    def __init__(self, l1b_file, met_file, sounding_id_list, max_name_len=25, albedo_degree=4, diag_file=None, ground_type=GroundType.lambertian, enable_cloud_3d=False):
         
         logging.debug("Creating simulation file using L1B: %s, Met: %s" % (l1b_file, met_file))
 
         self.l1b_file = l1b_file
         self.met_file = met_file
         self.sounding_id_list = sounding_id_list
+
+        if diag_file is not None:
+            logger.debug(f"Loading L2 diagnostic file for converged results: {diag_file}")
+            self.diag_file = h5py.File(diag_file, "r")
+            self.diag_sounding_ids = self.diag_file['/RetrievalHeader/sounding_id'][:].astype(str)
+            logger.debug(f"Loaded {len(self.diag_sounding_ids)} sounding ids from diagnostic file")
+        else:
+            self.diag_file = None
 
         self.max_name_len = 80
         self.albedo_degree = albedo_degree
@@ -210,12 +220,50 @@ class SimulationWriter(object):
         if self.enable_cloud_3d:
             self.cloud_3d = self.atmosphere_group.createVariable('cloud_3d', float, (self.snd_id_dim.name, self.channel_dim.name, self.fluor_param_dim.name))
 
+    def _set_converged_state_vector(self, sounding_id, state_vector):
+
+        logger.debug("Updating state vector to converged state")
+
+        w_sid = np.where(self.diag_sounding_ids == str(sounding_id))
+
+        if w_sid[0].size == 0:
+            raise Exception(f"Could not find sounding id: {sounding_id} in L2 diagnostic file: {self.diag_file.filename}")
+        
+        snd_index = w_sid[0][0]
+
+        logger.debug(f"Found {sounding_id} in L2 diagnostic file at index {snd_index}")
+
+        ret_sv_names = [ n.decode('UTF-8') for n in self.diag_file['/RetrievedStateVector/state_vector_names'][snd_index, :] ]
+        ret_sv_values = self.diag_file['/RetrievedStateVector/state_vector_result'][snd_index, :]
+
+        sv_names_fmt = "{:40s} <- {:40s}"
+        logger.debug("-" * 84)
+        logger.debug("{:^84s}".format("State Vector Names"))
+        logger.debug("-" * 84)
+        logger.debug(sv_names_fmt.format("Config SV", "Retrieved SV"))
+        logger.debug("-" * 84)
+
+        for config_name, ret_name in zip_longest(state_vector.state_vector_name, ret_sv_names, fillvalue=""):
+            logger.debug(sv_names_fmt.format(config_name, ret_name))
+
+        if len(ret_sv_values) != len(state_vector.state):
+            raise Exception(f"Retrieved state vector size: {len(ret_sv_values)} does not match configuration state vector size: {len(state_vector.state)}")
+
+        logger.debug("Updating configuration state vector with retrieved values. Please manually verify that the above printed state vector name mapping is correct.")
+
+        state_vector.update_state(ret_sv_values)
+        
+        logger.debug(f"Updated state vector:\n{state_vector}")
+
     def _fill_datasets(self, output_file):
 
         logger.debug("Filling datasets with values from configuration")
 
         for snd_idx, sid in enumerate(self.sounding_id_list):
             snd_config = self.config(sid)
+
+            if self.diag_file is not None:
+                self._set_converged_state_vector(sid, snd_config.retrieval.state_vector)
 
             self.obs_id[snd_idx] = int(sid)
  
@@ -305,7 +353,14 @@ class SimulationWriter(object):
                 logger.debug("Copying aerosol: %s" % aer_name)
                 self.aer_name[snd_idx, aer_index, :] = netCDF4.stringtochar(np.array([aer_name], 'S%d' % self.max_name_len))
                 self.aer_param[snd_idx, aer_index, :] = atm.aerosol.aerosol_extinction(aer_index).aerosol_parameter
-                prop_name = snd_config.config_def['atmosphere']['aerosol'][aer_name]['properties'].get('prop_name', aer_name)
+                aer_config = snd_config.config_def['atmosphere']['aerosol'].get(aer_name, None)
+
+                # Try and get aerosol property name from configuration falling back on the aerosol name itself as that of the property
+                if aer_config is not None:
+                    prop_name = aer_config['properties'].get('prop_name', aer_name) 
+                else:
+                    prop_name = aer_name
+
                 self.aer_prop_name[snd_idx, aer_index, :] = netCDF4.stringtochar(np.array([prop_name], 'S%d' % self.max_name_len))
 
             # Ground
@@ -409,6 +464,9 @@ def main():
     parser.add_argument("-s", "--sounding_ids_file", metavar="FILE", required=True,
         help="File with list of sounding ids to simulate")
 
+    parser.add_argument("-d", "--diag_file", metavar="FILE", required=True,
+        help="Path to the L2 Diagnostic file to optionally use to prime state vector with converged results")
+
     parser.add_argument("--cloud_3d", action="store_true",
         help="Add Cloud 3D effect values to simulation file")
 
@@ -431,7 +489,7 @@ def main():
             for sounding_id_line in sounding_id_file:
                 sounding_id_list.append( sounding_id_line.strip() )
 
-        sim_file = SimulationWriter(args.l1b_file, args.met_file, sounding_id_list, ground_type=args.ground_type, enable_cloud_3d=args.cloud_3d)
+        sim_file = SimulationWriter(args.l1b_file, args.met_file, sounding_id_list, diag_file=args.diag_file, ground_type=args.ground_type, enable_cloud_3d=args.cloud_3d)
         sim_file.save(output_file)
 
 if __name__ == "__main__":
