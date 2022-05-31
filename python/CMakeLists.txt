@@ -37,6 +37,7 @@ include_directories(${THIRDPARTY_INCLUDES} ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_S
 
 # Which interface files should be used for creating modules
 set(MODULE_INTERFACE_FILES 
+    aerosol_met_prior.i
     hdf_sounding_id.i
     level_1b_hdf.i
     level_1b_oco.i

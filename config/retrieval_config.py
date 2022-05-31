@@ -5,7 +5,9 @@ from refractor import framework as rf
 
 from oco import Level1bOco, OcoMetFile, OcoSoundingId, OcoNoiseModel
 
-from .base_config import base_config_definition
+from .base_config import base_config_definition, aerosol_prop_file
+
+from .aerosol_met import AerosolMetPrior
 
 def oco_level1b(hdf_obj, observation_id):
     max_ms = np.array([ 7.00e20, 2.45e20, 1.25e20 ])
@@ -95,5 +97,18 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id, **kwargs):
         'brdf_parameters': orig_brdf_params,
         'brdf_type': config_def['atmosphere']['ground']['brdf']['brdf_type'],
     }
+
+    # Use Met priors for aerosols
+    config_def['atmosphere']['aerosol'].update({
+        "creator": AerosolMetPrior,
+        "max_aod": 0.2,
+        "exp_aod": 0.8,
+        "min_types": 2,
+        "max_types": 2,
+        "linear_aod": False,
+        "relative_humidity_aerosol": False,
+        "max_residual": 0.005, 
+        "aerosol_prop_file": aerosol_prop_file,
+    })
  
     return config_def

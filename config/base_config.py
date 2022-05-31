@@ -1,5 +1,6 @@
 import os
 import h5py
+import netCDF4
 from enum import Enum
 
 import numpy as np
@@ -75,6 +76,10 @@ class PiecewiseLambertianGrid(creator.base.Creator):
 class DynamicCovarianceModification(creator.LoadValuesFromHDF):
 
     ground = param.InstanceOf(rf.Ground, required=False)
+    aerosol = param.InstanceOf(rf.Aerosol, required=False)
+
+    aerosol_cov_group = param.Scalar(str, default="/aerosol_extinction/gaussian_log")
+    aerosol_missing_name = param.Scalar(str, default="merra")
 
     def create(self, **kwargs):
         cov_dict = super().create(**kwargs)
@@ -86,6 +91,22 @@ class DynamicCovarianceModification(creator.LoadValuesFromHDF):
                 np.fill_diagonal(piecewise_cov, 0.1)
 
                 cov_dict["ground/lambertian_piecewise"] = piecewise_cov
+
+        if((aerosol := self.aerosol()) != None):
+            # Add covariances for meterological aerosol types that
+            # are not explicitly named in the retrieval covariance file
+
+            aer_cov_group = self.aerosol_cov_group().strip("/")
+            aer_missing_name = self.aerosol_missing_name()
+            
+            if isinstance(aerosol, rf.AerosolOptical):
+                with netCDF4.Dataset(self.filename(), "r") as cov_file:
+                    file_cov = cov_file[aer_cov_group].variables
+
+                    for aer_idx in range(aerosol.number_particle):
+                        aer_ext = aerosol.aerosol_extinction(aer_idx)
+                        if aer_ext.aerosol_name not in file_cov:
+                            cov_dict[f"{aer_cov_group}/{aer_ext.aerosol_name}"] = file_cov[aer_missing_name][:]
 
         return cov_dict
 
@@ -465,7 +486,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'retrieval_components': {
                 'creator': creator.retrieval.SVObserverComponents,
                 'exclude': ['absorber_levels/linear/O2', 'instrument_doppler'],
-                # Match order tradtionally used in old system
+                # Match order tradtionally used in the production OCO software
                 'order': ['CO2', 'H2O', 'surface_pressure', 'temperature_offset', 'aerosol_extinction/gaussian_log', 'ground', 'dispersion'],
             },
             'state_vector': {
