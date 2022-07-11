@@ -175,9 +175,10 @@ class SimulationWriter(object):
 
         self.eofs = {}
         for eof_idx in range(1,4):
-            eof_name = 'eof_{}'.format(eof_idx)
+            eof_name = f'eof_{eof_idx}'
             eof_order = self.instrument_group.createVariable(eof_name, float, (self.snd_id_dim.name, self.channel_dim.name))
             self.eofs[eof_name] = eof_order
+        self.eof_type_var = self.instrument_group.createVariable('eof_type', 'S1', (self.snd_id_dim.name, self.name_len.name))
 
         # Atmosphere
         self.atmosphere_group = output_file.createGroup('Atmosphere')
@@ -319,11 +320,19 @@ class SimulationWriter(object):
 
             # EOF
             ic_config = snd_config.config_def['instrument']['instrument_correction']
+            eof_type_str = None
             for ic_name in ic_config['corrections']:
                 if re.search('eof_', ic_name):
+                    eof_type_srch = re.search(r'(eof)_(.+)_(\d+)', ic_name)
+                    eof_type_str = eof_type_srch.group(2)
+
+                    eof_file_name = "{}_{}".format(eof_type_srch.group(1), eof_type_srch.group(3))
+
                     # Set eof_scaling
                     logger.debug("Copying {} parameters".format(ic_name))
-                    self.eofs[ic_name][snd_idx, :] = ic_config[ic_name]['scale_factors'][:]
+                    self.eofs[eof_file_name][snd_idx, :] = ic_config[ic_name]['scale_factors'][:]
+
+            self.eof_type_var[snd_idx, :] = netCDF4.stringtochar(np.array([eof_type_str], 'S%d' % self.max_name_len))
 
             # Atmosphere
             logger.debug("Copying pressure")

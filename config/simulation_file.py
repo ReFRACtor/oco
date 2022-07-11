@@ -92,6 +92,14 @@ class InstrumentValues(DataGroupValues):
 
         return bad_sample_mask
 
+    @property
+    def eof_type(self):
+
+        if "eof_type" in self.group_data.variables.keys():
+            return netCDF4.chartostring(self.group_data["eof_type"][self.index, :])
+        else:
+            return "land"
+
 class AtmosphereValues(DataGroupValues):
 
     def __init__(self, file_contents, index):

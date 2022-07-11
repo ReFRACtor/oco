@@ -55,13 +55,24 @@ def simulation_config_definition(sim_file, sim_index, channel_index=None, **kwar
         rad_uncert.append(sim_data.instrument.radiance_uncertainty[chan_idx, :])
 
     ic_config = config_def['instrument']['instrument_correction']
-    for ic_name in ic_config['corrections']:
-        if re.search('eof_', ic_name):
+
+    # Modify corrections list based on eof_type
+    eof_type = sim_data.instrument.eof_type
+
+    for corr_idx, orig_ic_name in enumerate(ic_config['corrections'].copy()):
+        if re.search('eof_', orig_ic_name):
+            eof_name_match = re.search(r'eof_(.+)_(\d+)', orig_ic_name)
+            eof_num = eof_name_match.group(2)
+
+            sim_ic_name = f"eof_{eof_type}_{eof_num}"
+
+            ic_config['corrections'][corr_idx] = sim_ic_name
+
             # Set EOF scaling term
-            ic_config[ic_name]['scale_factors'] = getattr(sim_data.instrument, ic_name)
+            ic_config[sim_ic_name]['scale_factors'] = getattr(sim_data.instrument, f"eof_{eof_num}")
 
             # Set uncertainty
-            ic_config[ic_name]['uncertainty'] = rad_uncert
+            ic_config[sim_ic_name]['uncertainty'] = rad_uncert
 
     # Atmosphere
     config_def['atmosphere']['pressure'] = {
