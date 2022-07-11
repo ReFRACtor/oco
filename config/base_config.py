@@ -245,6 +245,9 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'relative_velocity': None,
             'spectral_coefficient': None,
             'stokes_coefficient': None,
+            # OCO specific scenario values
+            'solar_distance': None,
+            'solar_velocity': None,
         },
         'spec_win': {
             'creator': creator.forward_model.SpectralWindowRange,
@@ -470,7 +473,8 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                 'solar_model': {
                     'creator': creator.solar_model.SolarAbsorptionAndContinuum,
                     'doppler': {
-                        'creator': creator.solar_model.SolarDopplerShiftPolynomial,
+                        # Uses solar_velocity and solar_distance from scenario
+                        'creator': creator.solar_model.SolarDopplerShiftDistanceVelocity,
                     },
                     'absorption': {
                         'creator': creator.solar_model.SolarAbsorptionTable,

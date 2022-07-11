@@ -56,6 +56,10 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id, **kwargs):
 
     config_def['scenario'] = {
         'creator': creator.scenario.ScenarioFromL1b,
+        'instrument_specific_values': {
+            'solar_distance': 'solar_distance',
+            'solar_velocity': 'solar_velocity',
+        }
     }
 
     config_def['spec_win']['bad_sample_mask'] = oco_bad_sample_mask(l1b_obj, observation_id)
@@ -83,7 +87,6 @@ def retrieval_config_definition(l1b_file, met_file, sounding_id, **kwargs):
             'field': "signal",
         },
         'solar_strength': np.array([4.87e21, 2.096e21, 1.15e21]),
-        'solar_distance': { 'creator': creator.l1b.SolarDistanceFromL1b },
     } 
 
     # Lambertian value is directly the albedo level from the continuum

@@ -158,8 +158,10 @@ class SimulationWriter(object):
         self.solar_azimuth = self.scenario_group.createVariable('solar_azimuth', float, (self.snd_id_dim.name, self.channel_dim.name))
         self.observation_zenith = self.scenario_group.createVariable('observation_zenith', float, (self.snd_id_dim.name, self.channel_dim.name))
         self.observation_azimuth = self.scenario_group.createVariable('observation_azimuth', float, (self.snd_id_dim.name, self.channel_dim.name))
-        self.solar_distance = self.scenario_group.createVariable('solar_distance', float, (self.snd_id_dim.name, self.channel_dim.name))
         self.relative_velocity = self.scenario_group.createVariable('relative_velocity', float, (self.snd_id_dim.name, self.channel_dim.name))
+
+        self.solar_distance = self.scenario_group.createVariable('solar_distance', float, (self.snd_id_dim.name,))
+        self.solar_velocity = self.scenario_group.createVariable('solar_velocity', float, (self.snd_id_dim.name,))
 
         self.spectral_coefficient = self.scenario_group.createVariable('spectral_coefficient', float, (self.snd_id_dim.name, self.channel_dim.name, self.spec_coeff_dim.name))
         self.stokes_coefficient = self.scenario_group.createVariable('stokes_coefficient', float, (self.snd_id_dim.name, self.channel_dim.name, self.stokes_coeff_dim.name))
@@ -295,6 +297,10 @@ class SimulationWriter(object):
             logger.debug("Copying L1B value: solar_distance")
             self.solar_distance[snd_idx] = l1b.solar_distance.value
             self.solar_distance.units = l1b.solar_distance.units.name
+
+            logger.debug("Copying L1B value: solar_velocity")
+            self.solar_velocity[snd_idx] = l1b.solar_velocity.value
+            self.solar_velocity.units = l1b.solar_velocity.units.name
 
             # Sample indexes
             logger.debug("Setting sample indexes:")
