@@ -440,11 +440,17 @@ class SimulationWriter(object):
                 self.coxmunk_albedo.parameter_names = "0: Albedo offset\n 1: Albedo intercept..."
  
             # Fluorescence
-            spec_eff_config = snd_config.config_def['forward_model']['spectrum_effect']
-            if 'fluorescence_effect' in spec_eff_config:
-                logger.debug("Copying fluorescence parameters")
-                self.fluorescence[snd_idx, :] = spec_eff_config['fluorescence_effect']['coefficients']
+            spectrum_effects = snd_config.forward_model.spectrum_effect
 
+            # Flurouescene effect is only in the first channel's spectrum effects
+            for spec_eff_obj in spectrum_effects[0]:
+                if isinstance(spec_eff_obj, rf.FluorescenceEffect):
+                    logger.debug("Copying fluorescence parameters")
+                    self.fluorescence[snd_idx, :] = [ spec_eff_obj.fluorescence_at_reference,
+                                                      spec_eff_obj.fluorescence_slope ]
+                    break
+
+            # Cloud 3D hard coded values as examples
             if self.enable_cloud_3d:
                 logger.debug("Creating cloud 3D values")
                 self.cloud_3d[snd_idx, :, 0] = 0.2
