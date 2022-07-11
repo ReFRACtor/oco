@@ -127,8 +127,8 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             },
             'absorption': {
                 'creator': creator.absorber.AbscoLegacy,
-                'table_scale': [1.0, 1.0, 1.004],
-                'filename': "{absco_base_path}/co2_v51.hdf",
+                'table_scale': [1.0, 0.994, 0.9875],
+                'filename': "{absco_base_path}/co2_v52.hdf",
             },
         },
         'H2O': {
@@ -140,7 +140,7 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             'absorption': {
                 'creator': creator.absorber.AbscoLegacy,
                 'table_scale': 1.0,
-                'filename': "{absco_base_path}/h2o_v51.hdf",
+                'filename': "{absco_base_path}/h2o_v52.hdf",
             },
         },
         'O2': {
@@ -154,8 +154,8 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             },
             'absorption': {
                 'creator': creator.absorber.AbscoLegacy,
-                'table_scale': 1.0,
-                'filename': "{absco_base_path}/o2_v51.hdf",
+                'table_scale': 1.0048,
+                'filename': "{absco_base_path}/o2_v52.hdf",
              },
         },
     }
@@ -288,8 +288,8 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
             },
             'instrument_correction': {
                 'creator': creator.instrument.InstrumentCorrectionList,
-                'corrections': ['eof_1', 'eof_2', 'eof_3'],
-                'eof_1': {
+                'corrections': ['eof_land_1', 'eof_land_2', 'eof_land_3'],
+                'eof_land_1': {
                     'creator': creator.instrument.EmpiricalOrthogonalFunction,
                     'scale_factors': np.array([0, 0, 0], dtype=float),
                     'order': 1,
@@ -297,9 +297,9 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                     'uncertainty': creator.l1b.UncertaintyFromL1b,
                     'scale_to_stddev': 1e19,
                     'eof_file': eof_file,
-                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Glint",
+                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Land",
                 },
-                'eof_2': {
+                'eof_land_2': {
                     'creator': creator.instrument.EmpiricalOrthogonalFunction,
                     'scale_factors': np.array([0, 0, 0], dtype=float),
                     'order': 2,
@@ -307,9 +307,9 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                     'uncertainty': creator.l1b.UncertaintyFromL1b,
                     'scale_to_stddev': 1e19,
                     'eof_file': eof_file,
-                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Glint",
+                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Land",
                 },
-                'eof_3': {
+                'eof_land_3': {
                     'creator': creator.instrument.EmpiricalOrthogonalFunction,
                     'scale_factors': np.array([0, 0, 0], dtype=float),
                     'order': 3,
@@ -317,17 +317,37 @@ def base_config_definition(absco_type=AbscoType.Legacy, **kwargs):
                     'uncertainty': creator.l1b.UncertaintyFromL1b,
                     'scale_to_stddev': 1e19,
                     'eof_file': eof_file,
-                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Glint",
+                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Land",
                 },
-                'eof_4': {
+                'eof_water_1': {
                     'creator': creator.instrument.EmpiricalOrthogonalFunction,
                     'scale_factors': np.array([0, 0, 0], dtype=float),
-                    'order': 4,
+                    'order': 1,
                     'scale_uncertainty': True,
                     'uncertainty': creator.l1b.UncertaintyFromL1b,
                     'scale_to_stddev': 1e19,
                     'eof_file': eof_file,
-                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Glint",
+                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Water",
+                },
+                'eof_water_2': {
+                    'creator': creator.instrument.EmpiricalOrthogonalFunction,
+                    'scale_factors': np.array([0, 0, 0], dtype=float),
+                    'order': 2,
+                    'scale_uncertainty': True,
+                    'uncertainty': creator.l1b.UncertaintyFromL1b,
+                    'scale_to_stddev': 1e19,
+                    'eof_file': eof_file,
+                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Water",
+                },
+                'eof_water_3': {
+                    'creator': creator.instrument.EmpiricalOrthogonalFunction,
+                    'scale_factors': np.array([0, 0, 0], dtype=float),
+                    'order': 3,
+                    'scale_uncertainty': True,
+                    'uncertainty': creator.l1b.UncertaintyFromL1b,
+                    'scale_to_stddev': 1e19,
+                    'eof_file': eof_file,
+                    'hdf_group': "Instrument/EmpiricalOrthogonalFunction/Water",
                 },
             },
         },
