@@ -319,18 +319,19 @@ class SimulationWriter(object):
                 self.rad_uncertainty.units = l1b.radiance(chan_idx).units.name
 
             # EOF
-            ic_config = snd_config.config_def['instrument']['instrument_correction']
-            eof_type_str = None
-            for ic_name in ic_config['corrections']:
-                if re.search('eof_', ic_name):
-                    eof_type_srch = re.search(r'(eof)_(.+)_(\d+)', ic_name)
-                    eof_type_str = eof_type_srch.group(2)
+            eof_type_str = "N/A"
+            for chan_idx in range(l1b.number_spectrometer()):
+                for corr_obj in inst.instrument_correction(chan_idx):
 
-                    eof_file_name = "{}_{}".format(eof_type_srch.group(1), eof_type_srch.group(3))
+                    eof_obj = rf.EmpiricalOrthogonalFunction.convert_from_instrument_correction(corr_obj)
 
-                    # Set eof_scaling
-                    logger.debug("Copying {} parameters".format(ic_name))
-                    self.eofs[eof_file_name][snd_idx, :] = ic_config[ic_name]['scale_factors'][:]
+                    if eof_obj is not None:
+                        logger.debug(f"Copying EOF {eof_obj.order} for channel {chan_idx+1}")
+
+                        self.eofs[f"eof_{eof_obj.order}"][snd_idx, chan_idx] = eof_obj.scale
+
+                        # Use HDF group name for determining type string, last part of HDF path lower cased
+                        eof_type_str = eof_obj.hdf_group_name.split("/")[-1].lower()
 
             self.eof_type_var[snd_idx, :] = netCDF4.stringtochar(np.array([eof_type_str], 'S%d' % self.max_name_len))
 
