@@ -277,20 +277,20 @@ class SimulationWriter(object):
 
                 for val_name in ['latitude', 'longitude', 'solar_zenith', 'solar_azimuth', 'relative_velocity']:
                     logger.debug("Copying L1B value: %s" % val_name)
-                    getattr(self, val_name)[snd_idx] = getattr(l1b, val_name)(chan_idx).value
+                    getattr(self, val_name)[snd_idx, chan_idx] = getattr(l1b, val_name)(chan_idx).value
                     getattr(self, val_name).units = getattr(l1b, val_name)(chan_idx).units.name
 
                 for nc_name, l1b_name in {'surface_height': 'altitude', 'observation_zenith': 'sounding_zenith', 'observation_azimuth': 'sounding_azimuth'}.items():
                     logger.debug("Copying L1B value: %s" % l1b_name)
-                    getattr(self, nc_name)[snd_idx] = getattr(l1b, l1b_name)(chan_idx).value
+                    getattr(self, nc_name)[snd_idx, chan_idx] = getattr(l1b, l1b_name)(chan_idx).value
                     getattr(self, nc_name).units = getattr(l1b, l1b_name)(chan_idx).units.name
 
-                    logger.debug("Copying L1B value: spectral_coefficient")
-                    self.spectral_coefficient[snd_idx, chan_idx, :] = l1b.spectral_coefficient(chan_idx).value
-                    self.spectral_coefficient.units = l1b.spectral_coefficient(chan_idx).units.name
+                logger.debug("Copying L1B value: spectral_coefficient")
+                self.spectral_coefficient[snd_idx, chan_idx, :] = l1b.spectral_coefficient(chan_idx).value
+                self.spectral_coefficient.units = l1b.spectral_coefficient(chan_idx).units.name
 
-                    logger.debug("Copying L1B value: stokes_coefficient")
-                    self.stokes_coefficient[snd_idx, chan_idx, :] = l1b.stokes_coefficient(chan_idx)
+                logger.debug("Copying L1B value: stokes_coefficient")
+                self.stokes_coefficient[snd_idx, chan_idx, :] = l1b.stokes_coefficient(chan_idx)
 
             logger.debug("Copying L1B value: solar_distance")
             self.solar_distance[snd_idx] = l1b.solar_distance.value
