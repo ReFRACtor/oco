@@ -36,7 +36,7 @@ class GroundType(Enum):
 
 class SimulationWriter(object): 
 
-    def __init__(self, l1b_file, met_file, sounding_id_list, max_name_len=25, albedo_degree=4, diag_file=None, ground_type=GroundType.lambertian, enable_cloud_3d=False):
+    def __init__(self, l1b_file, met_file, sounding_id_list, max_name_len=25, albedo_degree=4, diag_file=None, ground_type=GroundType.lambertian, enable_cloud_3d=False, use_aerosols=True):
         
         logging.debug("Creating simulation file using L1B: %s, Met: %s" % (l1b_file, met_file))
 
@@ -59,6 +59,7 @@ class SimulationWriter(object):
         self.ground_type = GroundType(ground_type)
 
         self.enable_cloud_3d = enable_cloud_3d
+        self.use_aerosols = use_aerosols
 
     def config(self, sounding_id):
 
@@ -93,7 +94,7 @@ class SimulationWriter(object):
             atm = snd_config.atmosphere
             max_level = max(max_level, atm.pressure.number_level)
             max_gas = max(max_gas, atm.absorber.number_species)
-            if atm.aerosol:
+            if atm.aerosol and self.use_aerosols:
                 max_aer = max(max_aer, atm.aerosol.number_particle)
 
             inst = snd_config.instrument
@@ -364,20 +365,21 @@ class SimulationWriter(object):
                 self.gas_vmr[snd_idx, gas_index, :] = atm.absorber.absorber_vmr(gas_name).vmr_grid(atm.pressure).value
 
             # Aerosol
-            for aer_index in range(atm.aerosol.number_particle):
-                aer_name = atm.aerosol.aerosol_name[aer_index]
-                logger.debug("Copying aerosol: %s" % aer_name)
-                self.aer_name[snd_idx, aer_index, :] = netCDF4.stringtochar(np.array([aer_name], 'S%d' % self.max_name_len))
-                self.aer_param[snd_idx, aer_index, :] = atm.aerosol.aerosol_extinction(aer_index).aerosol_parameter
-                aer_config = snd_config.config_def['atmosphere']['aerosol'].get(aer_name, None)
+            if self.use_aerosols:
+                for aer_index in range(atm.aerosol.number_particle):
+                    aer_name = atm.aerosol.aerosol_name[aer_index]
+                    logger.debug("Copying aerosol: %s" % aer_name)
+                    self.aer_name[snd_idx, aer_index, :] = netCDF4.stringtochar(np.array([aer_name], 'S%d' % self.max_name_len))
+                    self.aer_param[snd_idx, aer_index, :] = atm.aerosol.aerosol_extinction(aer_index).aerosol_parameter
+                    aer_config = snd_config.config_def['atmosphere']['aerosol'].get(aer_name, None)
 
-                # Try and get aerosol property name from configuration falling back on the aerosol name itself as that of the property
-                if aer_config is not None:
-                    prop_name = aer_config['properties'].get('prop_name', aer_name) 
-                else:
-                    prop_name = aer_name
+                    # Try and get aerosol property name from configuration falling back on the aerosol name itself as that of the property
+                    if aer_config is not None:
+                        prop_name = aer_config['properties'].get('prop_name', aer_name) 
+                    else:
+                        prop_name = aer_name
 
-                self.aer_prop_name[snd_idx, aer_index, :] = netCDF4.stringtochar(np.array([prop_name], 'S%d' % self.max_name_len))
+                    self.aer_prop_name[snd_idx, aer_index, :] = netCDF4.stringtochar(np.array([prop_name], 'S%d' % self.max_name_len))
 
             # Ground
             ground_type_str = self.ground_type.name
@@ -486,11 +488,14 @@ def main():
     parser.add_argument("-s", "--sounding_ids_file", metavar="FILE", required=True,
         help="File with list of sounding ids to simulate")
 
-    parser.add_argument("-d", "--diag_file", metavar="FILE", required=True,
+    parser.add_argument("-d", "--diag_file", metavar="FILE", required=False,
         help="Path to the L2 Diagnostic file to optionally use to prime state vector with converged results")
 
     parser.add_argument("--cloud_3d", action="store_true",
         help="Add Cloud 3D effect values to simulation file")
+
+    parser.add_argument("--no_aerosols", action="store_false", default=True, dest="use_aerosols",
+        help="Do not put aerosols into simulation file")
 
     ground_types = [ v.value for v in list(GroundType) ]
     parser.add_argument("-g", "--ground_type", choices=ground_types, default=GroundType.lambertian.value)
@@ -511,7 +516,7 @@ def main():
             for sounding_id_line in sounding_id_file:
                 sounding_id_list.append( sounding_id_line.strip() )
 
-        sim_file = SimulationWriter(args.l1b_file, args.met_file, sounding_id_list, diag_file=args.diag_file, ground_type=args.ground_type, enable_cloud_3d=args.cloud_3d)
+        sim_file = SimulationWriter(args.l1b_file, args.met_file, sounding_id_list, diag_file=args.diag_file, ground_type=args.ground_type, enable_cloud_3d=args.cloud_3d, use_aerosols=args.use_aerosols)
         sim_file.save(output_file)
 
 if __name__ == "__main__":
